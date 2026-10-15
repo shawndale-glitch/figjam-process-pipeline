@@ -61,3 +61,7 @@ workflows/    consumers.yaml (which apps implement which process versions)
 - The plugin-API extractor, intake, inventory check and self-test have been run against real boards.
 - `figma_rest.py` (the REST reader used by CI intake) hasn't yet been run against the live Figma API.
 - The examples are fictional.
+
+## License
+
+Copyright © 2026 Shawn Dale. All rights reserved. The code is published for reading and reference; no license is granted to copy, modify or redistribute it.
