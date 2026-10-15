@@ -1,0 +1,288 @@
+# governance/workflow-rules.yaml
+#
+# Machine-readable rules for the FigJam -> repo -> application workflow pipeline.
+# Read by: CI (tooling/workflow_*.py), the workflow intake agent
+# (.github/agents/workflow-intake.agent.md), and reviewers.
+#
+# Changing this file is a governance change: it needs approval from @your-org/doc-owners
+# (see .github/CODEOWNERS) and a bump of `rules_version`.
+#
+# Values marked TBC need a decision before the pipeline goes live.
+
+rules_version: 0.3.0
+applies_to: workflows/**/workflow.yaml
+schema: schemas/workflow.schema.json
+spec: README.md
+
+# ---------------------------------------------------------------------------
+# 0. LIBRARY: the only shapes the intake accepts
+# ---------------------------------------------------------------------------
+library:
+  name: Process Design Standards/Components
+  figma_file: https://www.figma.com/design/<library-file-key>/Process-Design-Standards-Components   # your published library
+  published_to: your Figma organization (record the library version you publish)
+  languages: [es, en]                  # same 17 shapes + lane + header in each language
+  template: https://www.figma.com/board/<template-file-key>/Process-template   # rules, legend and worked example built from the library
+  retired_components:                  # hidden from publishing; using one is an R2 error
+    - Conectores/Flujo de secuencia, Conectores/Mensaje - traspaso, Conectores/Asociación, Conectores/Salida etiquetada
+    - Connectors/Sequence flow, Connectors/Message - handoff, Connectors/Association, Connectors/Labelled exit
+  flows: native FigJam connectors only. Solid = sequence; dashed between steps = handoff (message); dashed or dotted to a system, document, data store or annotation = association
+  process_id: "[AREA]-[NN] or [AREA]-[NNN]; sub-process [AREA]-[NN].[n]"
+  selftest: python tooling/selftest.py   # must pass after any library, rules or schema change
+  default_for_new_figjam_files: TBC   # needs a Figma org admin (Admin settings → Libraries)
+
+# ---------------------------------------------------------------------------
+# 0b. LINT: every rule the intake applies to a board (tooling/workflow_core.py)
+# ---------------------------------------------------------------------------
+# error   = blocks merge at any status; warning = blocks in-review and validated (see rejection.severities)
+lint:
+  R1: { severity: error,   rule: "One header block per section; process ID matches AREA-NN[N][.n], has a prefix in governance/areas.yaml, and starts the section name" }
+  R2: { severity: error,   rule: "Every shape is a published library component (no raw FigJam shapes, sections, frames or retired arrow components); every step has a label" }
+  R3: { severity: error,   rule: "Every connector has both ends on library steps; links to a system, document, data store or annotation are dashed or dotted" }
+  R4: { severity: error,   rule: "An XOR decision has at least two exits, each with a unique condition label" }
+  R5: { severity: error,   rule: "Exactly one start event; every step is reachable from it; no dead ends; end events have no outgoing flow" }
+  R6: { severity: error,   rule: "Lanes are Swimlane components with a role; every step's centre sits inside exactly one lane" }
+  R7: { severity: error,   rule: "Header date is YYYY-MM-DD; status, as-is/to-be and version (v1.2.3) use the allowed values" }
+  R8: { severity: error,   rule: "No removed-step marker in a diagram going to review or approval" }
+  R9: { severity: error,   rule: "No library default text left in a label, lane role or header field (e.g. 'Verb + object', 'Question?', 'Role or name')" }
+  W1: { severity: warning, rule: "Task labels are verb + object, at least two words" }
+  W2: { severity: warning, rule: "Lanes don't overlap; at least 20 px between lanes" }
+  W3: { severity: warning, rule: "No loose text in the section; use an annotation if it matters" }
+  W4: { severity: warning, rule: "Stickies in the section are exported as notes and reviewed before approval" }
+  W5: { severity: warning, rule: "Every system, document, data store and annotation is linked to a step" }
+  W6: { severity: warning, rule: "Pain-point markers only in as-is diagrams; changed/removed-step markers only in to-be diagrams" }
+  W7: { severity: warning, rule: "A decision label is a yes/no question ending in '?'" }
+  W8: { severity: warning, rule: "At most 15 activities and sub-processes per diagram; collapse the rest into a sub-process section" }
+  not_checked_by_intake:          # in the standards, reviewed by people
+    - "Mind maps are for workshops only; convert them into a rule table (Condition · Approver · Override by · Process ID) before review"
+    - "Flow reads left to right; the happy path is a straight line"
+
+# ---------------------------------------------------------------------------
+# 0c. INVENTORY: the process inventory workbook (tooling/inventory_check.py)
+# ---------------------------------------------------------------------------
+# The workbook that lists every process to be redesigned is the source of truth for the
+# process list. It is checked before its rows are used to plan or generate documentation.
+inventory:
+  checker: python tooling/inventory_check.py <workbook.xlsx> [--sheet NAME] [--report FILE]
+  header_row: first row (within the first 10) that names at least two required columns
+  required_columns:               # any listed name is accepted (case and accents ignored)
+    process_id:   ["ID del proceso", "Process ID", "ID"]
+    process:      ["Proceso", "Nombre del proceso", "Process", "Process name"]
+    category:     ["Tipo / Categoría", "Categoría", "Tipo", "Category"]
+    owner:        ["Responsable", "Owner"]
+    status:       ["Estado", "Status"]
+    planned_date: ["Fecha tentativa", "Fecha prevista", "Planned date"]
+    figjam_link:  ["Enlace FigJam", "FigJam", "FigJam link"]
+  ignored_columns: ["Nº", "N.º", "No.", "#"]   # row numbers, not data
+  area_columns: every other column; a mark in one means the area takes part, and a key row explains the mark
+  key_row: a row whose first cell starts with "Clave:", "Key:" or "Leyenda:", or a sheet named Clave, Key or Leyenda
+  rules:
+    I1: { severity: error,   rule: "Every required column is present" }
+    I2: { severity: error,   rule: "Process IDs match AREA-NN[N][.n], use a prefix from governance/areas.yaml, are stored as text and are unique" }
+    I3: { severity: error,   rule: "Planned dates are date cells or YYYY-MM-DD text, never dd/mm/yyyy text" }
+    I4: { severity: error,   rule: "Status uses the header values (Borrador, En revisión, Aprobado, Obsoleto, or the English equivalents)" }
+    I5: { severity: warning, rule: "Area columns are explained by a key row or key sheet" }
+    I6: { severity: warning, rule: "No column with a header and no values" }
+    I7: { severity: error,   rule: "In review or approved processes have a FigJam link to the process section (figma.com/board/... with node-id); drafts get a warning" }
+    I8: { severity: warning, rule: "Every process in workflows/ appears in the workbook with the same status" }
+
+# ---------------------------------------------------------------------------
+# 1. ROUTING: where each artifact goes, who can see it, and who can change it
+# ---------------------------------------------------------------------------
+routing:
+  source_of_truth: workflows/<area>/<process_id>/workflow.yaml
+
+  artifacts:
+    - id: workflow-yaml
+      path: workflows/<area>/<process_id>/workflow.yaml
+      generated_by: tooling/workflow_export.py
+      hand_edit: forbidden            # edit the FigJam board, then re-export
+      audiences: [developer, integrator, ai-agent]
+      delivered_via: [repo, release-bundle]
+    - id: board-snapshot
+      path: workflows/<area>/<process_id>/board.json
+      purpose: raw FigJam extraction kept for provenance and diffing
+      hand_edit: forbidden
+      audiences: [writer, ai-agent]
+      delivered_via: [repo]
+    - id: changelog
+      path: workflows/<area>/<process_id>/CHANGELOG.md
+      generated_by: tooling/workflow_version.py
+      hand_edit: append-only          # people may add a "Why" note under a generated entry
+      audiences: [all]
+      delivered_via: [repo, site, release-bundle]
+    - id: process-page
+      path: docs/processes/<area>/<process_id>.md
+      generated_by: tooling/workflow_render.py
+      hand_edit: outside-generated-regions-only
+      audiences: [business-sme, pm, consultant, developer]
+      delivered_via: [site]
+    - id: conformance-scenarios
+      path: conformance/<process_id>/scenarios.feature
+      generated_by: tooling/workflow_scenarios.py
+      hand_edit: forbidden
+      audiences: [developer, qa]
+      delivered_via: [repo, release-bundle]
+    - id: bindings
+      path: conformance/<process_id>/bindings.yaml
+      generated_by: null              # written by developers
+      hand_edit: allowed
+      audiences: [developer, qa]
+      delivered_via: [repo, release-bundle]
+    - id: lint-report
+      path: null                      # never committed to main
+      audiences: [business-sme, writer]
+      delivered_via: [pr-comment, issue, figma-comment]
+
+  channels:
+    site:
+      description: MkDocs site built from docs/ and published by your docs hosting (not included here)
+      visibility: TBC                 # GitHub Pages from a private repo is only access-controlled on Enterprise Cloud; confirm the plan
+    release-bundle:
+      description: GitHub Release per validated workflow version (tag <process_id>@<semver>) with workflow.yaml, scenarios, bindings, CHANGELOG
+      consumers_registry: workflows/consumers.yaml
+    repo:
+      description: read access through GitHub repository permissions
+
+  audiences:
+    business-sme:   { reads: [site, lint-report], writes: [figjam], approves: [process-semantics] }
+    pm:             { reads: [site, changelog, conformance-status], writes: [], approves: [release-scope] }
+    consultant:     { reads: [site], writes: [figjam], approves: [], note: "external; read access to the site only unless granted repo read" }
+    developer:      { reads: [repo, release-bundle], writes: [bindings, step-definitions], approves: [bindings] }
+    writer:         { reads: [all], writes: [docs, governance, tooling], approves: [docs-structure] }
+    ai-agent:       { reads: [repo], writes: [pull-request-only], approves: [] }
+
+  write_control:
+    mechanism: .github/CODEOWNERS + branch protection on main
+    note: GitHub can't restrict READ access per folder. Content that some audiences must not see goes in a separate repository.
+
+# ---------------------------------------------------------------------------
+# 2. VERSIONING: computed automatically from the semantic diff of workflow.yaml
+# ---------------------------------------------------------------------------
+versioning:
+  scheme: semver                      # MAJOR.MINOR.PATCH per process, independent per process_id
+  identity: process_id                # e.g. P2P-03; never reused, never renamed
+  node_identity: figma_node_id        # stable across exports; a new node ID = a new node
+  authority: ci                       # CI computes the version; the FigJam header "Versión" is checked against it
+  pre_release: "0.x while status != validated"
+  tag_format: "<process_id>@<major>.<minor>.<patch>"
+  bump_rules:
+    major:                            # behaviour an implementation may already rely on has changed
+      - node_removed: [task, subprocess, gateway.xor, gateway.and, event.start, event.end]
+      - flow_removed: sequence
+      - flow_retargeted: sequence     # same source, different target
+      - condition_changed: gateway exit label changed
+      - lane_removed_or_renamed: true
+      - node_moved_to_other_lane: true
+      - node_type_changed: true
+    minor:                            # additive: existing paths still valid
+      - node_added: any
+      - flow_added: [sequence, association]
+      - rule_added: true
+      - system_or_document_linked: true
+    patch:                            # wording only, no behaviour change
+      - label_changed_without_meaning_change: true   # flagged for human confirmation
+      - annotation_or_note_changed: true
+      - header_metadata_changed: [owner, updated]
+  header_check:
+    declared_field: "Versión"
+    rule: declared version must be >= computed version; otherwise fail with the computed value in the report
+  status_map:                         # FigJam header "Estado" -> lifecycle status
+    Borrador: draft
+    En revisión: in-review
+    Aprobado: validated
+    Obsoleto: deprecated
+  release_requires:
+    status: validated
+    validated_by: required            # role + date from the PR approval of a business-sme code owner
+    lint_errors: 0
+    lint_warnings: 0
+  deprecation:
+    requires: superseded_by
+    keep_for: "2 major versions or 12 months, whichever is longer"   # TBC
+  provenance_fields:                  # written into workflow.yaml by the exporter
+    - source.figma_file_key
+    - source.figma_page_or_section
+    - source.figma_version_id
+    - source.exported_at
+    - source.exported_by
+    - content_hash                    # sha256 of the normalised yaml, for drift detection
+  on_release:
+    - create_tag
+    - create_github_release_with_bundle
+    - regenerate_process_page_and_changelog
+    - notify_consumers:
+        registry: workflows/consumers.yaml
+        major: open_issue_in_consumer_repo
+        minor: release_note
+        patch: none
+
+# ---------------------------------------------------------------------------
+# 3. REJECTION: what happens to a FigJam export that fails validation
+# ---------------------------------------------------------------------------
+rejection:
+  severities:
+    error:   blocks merge at any status
+    warning: allowed for draft; blocks in-review and validated
+  outcome_on_error:
+    merge_to_main: false
+    last_valid_version: stays published and released, unchanged
+    pull_request: kept open as draft, label "workflow:validation-failed"
+    issue:
+      create: true
+      assignee_from: header.Responsable   # mapped to a GitHub handle via governance/people.yaml (TBC)
+      body: lint report, one line per finding, each with a FigJam deep link to the node
+    figma_comment:
+      enabled: TBC                    # pin each finding as a comment on the offending node via the Figma REST API
+  ai_agent_may_autofix:               # mechanical normalisation only, recorded in the report
+    - trim_whitespace_and_newlines
+    - collapse_double_spaces
+    - normalise_date_to_iso
+  ai_agent_must_not:
+    - invent_or_change_gateway_conditions
+    - add_remove_or_reconnect_flows
+    - retype_shapes
+    - change_labels_beyond_whitespace
+    - mark_anything_validated
+  author_loop: fix in FigJam -> re-run intake on the same PR
+  escalation:
+    after_failed_attempts: 3
+    or_open_for_days: 10              # TBC
+    escalate_to: "@your-org/doc-owners"
+  metrics: [first_pass_rate, mean_attempts_to_pass, top_rule_violations]
+
+# ---------------------------------------------------------------------------
+# 4. CONFORMANCE: proving the built application behaves as documented
+# ---------------------------------------------------------------------------
+conformance:
+  pinning: 'each consumer declares implements: <process_id> + <semver range> in workflows/consumers.yaml'
+  layers:
+    - id: C1-traceability
+      when: every PR in the consumer repo
+      check: every task/gateway/event on the happy path has a binding in conformance/<process_id>/bindings.yaml
+      binding_kinds: [api-operation, event, vendor-config, manual-step]
+      join_keys:
+        api-operation: OpenAPI operation_id
+        event: AsyncAPI/Kafka event name + version
+        vendor-config: vendor product configuration export key (TBC)
+      blocks: release
+    - id: C2-scenarios
+      when: consumer CI against a test environment
+      source: conformance/<process_id>/scenarios.feature (generated, one scenario per start-to-end path; happy path tagged @happy)
+      check: all @happy scenarios pass; other paths reported
+      blocks: release (happy path only)
+    - id: C3-runtime
+      when: scheduled, on test/UAT event logs; later production (TBC)
+      method: rebuild traces from event-stream events by correlation ID; replay each trace against the model's allowed transitions
+      check: zero transitions the model doesn't allow; report unseen paths
+      blocks: none (alerts the process owner and opens an issue)
+    - id: C4-manual-evidence
+      when: steps with binding kind manual-step or vendor-config that can't be automated
+      check: UAT sign-off recorded with role, date, and evidence link
+      blocks: release
+  report:
+    publish_to: docs/processes/<area>/<process_id>.md (conformance badge + per-node coverage)
+    fields: [process_version, consumer, consumer_version, c1, c2, c3, c4, coverage_nodes, coverage_flows, date]
+  on_model_change:
+    major: consumer conformance status resets to "not verified" for the new version
+    minor: new nodes need bindings before the consumer can move its pin

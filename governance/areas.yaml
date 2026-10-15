@@ -1,0 +1,7 @@
+# governance/areas.yaml
+# Controlled list of process areas. The process ID prefix (before the dash) picks the
+# folder under workflows/ and docs/processes/. Adding a prefix is a governance change.
+prefixes:
+  P2P: procure-to-pay     # fictional worked example (invoice approval)
+  OPS: operations         # example area
+  QA: qa                  # reserved: library self-test boards (examples/library-selftest)

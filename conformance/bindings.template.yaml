@@ -1,0 +1,27 @@
+# conformance/<process_id>/bindings.yaml
+# Written by developers. Maps each model node (by Figma node ID) to what implements it.
+# Conformance layer C1 fails if a happy-path task, gateway, or event has no binding.
+
+process: P2P-03
+process_version: "1.0.0"              # the model version these bindings were written for
+bindings:
+  - node: "18:375"                    # task "Gets sick"
+    kind: api-operation               # api-operation | event | vendor-config | manual-step
+    operation_id: TBC                 # OpenAPI operation_id (join key with api.* topics)
+  - node: "18:377"                    # gateway "Should I vomit here?"
+    kind: api-operation
+    operation_id: TBC
+    decision_field: TBC               # field/expression the code branches on
+    conditions:                       # one entry per model exit label
+      "No":  TBC
+      "Yes": TBC
+  - node: "18:380"                    # end event "Awesome!"
+    kind: event
+    event: TBC                        # e.g. invoice.approved, version 2
+    version: 1
+  - node: "18:401"                    # task "No More Dog Treats"
+    kind: vendor-config
+    config_key: TBC                   # vendor product configuration item verified by export
+  - node: "18:395"
+    kind: manual-step
+    evidence: UAT sign-off             # role, date, and link recorded in the conformance report

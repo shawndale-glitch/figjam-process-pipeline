@@ -1,0 +1,6 @@
+site_name: Process documentation
+docs_dir: docs
+theme:
+  name: material
+nav:
+  - Home: index.md

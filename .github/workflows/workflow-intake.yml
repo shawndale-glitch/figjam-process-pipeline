@@ -1,0 +1,106 @@
+# Export a process section from FigJam, check it, version it, and open a pull request.
+# Script: tooling/workflow_intake.py   Rules: governance/workflow-rules.yaml (routing, versioning, rejection)
+#
+# Secrets:
+#   FIGMA_TOKEN        read-only token of the Figma service account (required)
+#   INTAKE_BOT_TOKEN   optional PAT or GitHub App token. PRs opened with the default GITHUB_TOKEN
+#                      don't trigger other workflows, so the CI workflow won't run on them without it.
+# Repo setting: Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests".
+name: Workflow intake
+
+on:
+  workflow_dispatch:
+    inputs:
+      figma_url:
+        description: FigJam link to the process section (right-click the section → Copy link)
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: workflow-intake-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.INTAKE_BOT_TOKEN || github.token }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Export from FigJam, lint, version, write resting point
+        id: intake
+        continue-on-error: true
+        env:
+          FIGMA_TOKEN: ${{ secrets.FIGMA_TOKEN }}
+          FIGMA_URL: ${{ inputs.figma_url }}
+        run: python tooling/workflow_intake.py --url "$FIGMA_URL" --report intake-report.md --github-output
+
+      - name: Strict docs build
+        id: build
+        if: steps.intake.outputs.outcome == 'accepted'
+        continue-on-error: true
+        run: |
+          if mkdocs build --strict; then echo "- Strict docs build: pass" >> intake-report.md
+          else echo "- Strict docs build: **fail** (often a missing nav entry in mkdocs.yml; fix it on this PR)" >> intake-report.md; fi
+
+      - name: Open or update the pull request
+        if: steps.intake.outputs.outcome == 'accepted'
+        env:
+          GH_TOKEN: ${{ secrets.INTAKE_BOT_TOKEN || github.token }}
+          PID: ${{ steps.intake.outputs.process_id }}
+          VERSION: ${{ steps.intake.outputs.version }}
+          BUMP: ${{ steps.intake.outputs.bump }}
+        run: |
+          branch="workflow/${PID}-${VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add workflows docs/processes conformance
+          git commit -m "docs(processes): ${PID} ${VERSION} from FigJam (${BUMP})"
+          git push --force-with-lease -u origin "$branch"
+          gh label create "workflow:intake" --color 1D76DB --force
+          if gh pr view "$branch" >/dev/null 2>&1; then
+            gh pr edit "$branch" --body-file intake-report.md
+          else
+            gh pr create --head "$branch" --title "${PID} ${VERSION}: workflow intake from FigJam" \
+              --body-file intake-report.md --label "workflow:intake"
+          fi
+
+      - name: Report a rejection to the author
+        if: steps.intake.outputs.outcome == 'rejected'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PID: ${{ steps.intake.outputs.process_id }}
+        run: |
+          title="[${PID:-unknown}] Workflow intake rejected"
+          gh label create "workflow:validation-failed" --color D93F0B --force
+          num=$(gh issue list --state open --label "workflow:validation-failed" --search "\"$title\" in:title" --json number --jq '.[0].number')
+          if [ -n "$num" ]; then
+            gh issue comment "$num" --body-file intake-report.md
+          else
+            gh issue create --title "$title" --body-file intake-report.md --label "workflow:validation-failed"
+          fi
+          # Assigning the header's Responsable needs governance/people.yaml (TBC).
+
+      - name: Job summary
+        if: always()
+        run: |
+          if [ -f intake-report.md ]; then cat intake-report.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - name: Fail the run when the board was rejected or the export crashed
+        if: steps.intake.outputs.outcome == 'rejected' || (steps.intake.outcome == 'failure' && steps.intake.outputs.outcome == '')
+        run: |
+          echo "Intake did not pass. See the job summary and the issue." >&2
+          exit 1

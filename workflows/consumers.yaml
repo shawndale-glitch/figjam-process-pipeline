@@ -1,0 +1,11 @@
+# workflows/consumers.yaml
+# Which application repos implement which process versions. Read by workflow_release.py:
+# a major release opens an issue in each consumer repo whose range it leaves.
+consumers:
+  - id: example-app                    # example entry
+    repo: your-org/example-app
+    owner_team: "@your-org/engineering"
+    implements:
+      - process: P2P-03
+        range: "^1.0.0"
+    event_source: TBC                  # event topic(s) or business-event feed used by conformance layer C3

@@ -1,0 +1,115 @@
+# Reusable conformance check, called from each consumer (application) repo.
+# Script: tooling/workflow_conformance.py   Rules: governance/workflow-rules.yaml (conformance)
+#
+# In the consumer repo, e.g. .github/workflows/conformance.yml:
+#   on: [pull_request]
+#   jobs:
+#     p2p-03:
+#       uses: shawndale-glitch/figjam-process-pipeline/.github/workflows/workflow-conformance.yml@main
+#       with:
+#         process: P2P-03
+#         range: "^1.0.0"
+#         openapi: "api/**/*.yaml"
+#         asyncapi: "events/**/*.yaml"
+#         scenario_command: "behave conformance/features"     # optional: runs C2
+#       secrets:
+#         docs_repo_token: ${{ secrets.PIPELINE_READ_TOKEN }} # needed while the docs repo is private
+name: Workflow conformance
+
+on:
+  workflow_call:
+    inputs:
+      process:          { type: string, required: true }
+      range:            { type: string, required: true }
+      docs_repo:        { type: string, default: shawndale-glitch/figjam-process-pipeline }
+      bindings:         { type: string, default: "" }   # default: conformance/<process>/bindings.yaml
+      openapi:          { type: string, default: "" }   # space-separated globs
+      asyncapi:         { type: string, default: "" }   # space-separated globs
+      scenario_command: { type: string, default: "" }   # C2: the consumer's BDD runner; scenarios are in $SCENARIOS
+    secrets:
+      docs_repo_token:  { required: false }
+    outputs:
+      model_tag:
+        value: ${{ jobs.c1-c4.outputs.tag }}
+
+permissions:
+  contents: read
+
+jobs:
+  c1-c4:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    env:
+      GH_TOKEN: ${{ secrets.docs_repo_token || github.token }}
+      PROCESS: ${{ inputs.process }}
+      RANGE: ${{ inputs.range }}
+      DOCS_REPO: ${{ inputs.docs_repo }}
+    steps:
+      - uses: actions/checkout@v4                      # consumer repo: bindings + API/event specs
+
+      - uses: actions/checkout@v4                      # docs repo: conformance tooling
+        with:
+          repository: ${{ inputs.docs_repo }}
+          token: ${{ secrets.docs_repo_token || github.token }}
+          path: _pipeline
+          sparse-checkout: tooling
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install "pyyaml>=6" "jsonschema>=4.18,<5"
+
+      - name: Resolve the newest model release in range
+        id: resolve
+        run: python _pipeline/tooling/workflow_conformance.py resolve --process "$PROCESS" --range "$RANGE" --docs-repo "$DOCS_REPO"
+
+      - name: Download the model bundle
+        env:
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          gh release download "$TAG" -R "$DOCS_REPO" -p "*.zip" -D _model
+          cd _model && unzip -q ./*.zip && rm ./*.zip
+
+      - name: C1 traceability + C4 evidence
+        env:
+          BINDINGS: ${{ inputs.bindings }}
+          OPENAPI: ${{ inputs.openapi }}
+          ASYNCAPI: ${{ inputs.asyncapi }}
+        run: |
+          set -f   # keep globs for Python, don't let the shell expand them
+          model=$(ls _model/*/workflow.yaml)
+          python _pipeline/tooling/workflow_conformance.py check \
+            --model "$model" \
+            --bindings "${BINDINGS:-conformance/$PROCESS/bindings.yaml}" \
+            --range "$RANGE" \
+            --openapi $OPENAPI --asyncapi $ASYNCAPI \
+            --report conformance-report.md --json conformance.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: conformance-${{ inputs.process }}
+          path: |
+            conformance-report.md
+            conformance.json
+            _model/
+
+  c2-scenarios:
+    needs: c1-c4
+    if: inputs.scenario_command != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: conformance-${{ inputs.process }}
+          path: _conformance
+      - name: Run generated scenarios (@happy must pass)
+        env:
+          SCENARIO_COMMAND: ${{ inputs.scenario_command }}
+        run: |
+          export SCENARIOS=$(ls _conformance/_model/*/scenarios.feature)
+          echo "Scenarios: $SCENARIOS"
+          bash -c "$SCENARIO_COMMAND"

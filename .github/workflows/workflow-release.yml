@@ -1,0 +1,47 @@
+# Tag and release validated workflow versions after merge to main.
+# Script: tooling/workflow_release.py   Rules: governance/workflow-rules.yaml (versioning.release_requires, on_release)
+#
+# Secrets:
+#   CONSUMER_NOTIFY_TOKEN  optional PAT or GitHub App token with issues:write on consumer repos;
+#                          without it, major-release issues in consumer repos are skipped (listed in the summary).
+name: Workflow release
+
+on:
+  push:
+    branches: [main]
+    paths: ["workflows/**/workflow.yaml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: workflow-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Release changed, validated workflows
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONSUMER_NOTIFY_TOKEN: ${{ secrets.CONSUMER_NOTIFY_TOKEN }}
+          SINCE: ${{ github.event.before }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python tooling/workflow_release.py --since "$SINCE"
