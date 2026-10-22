@@ -1,11 +1,10 @@
 # governance/workflow-rules.yaml
 #
 # Machine-readable rules for the FigJam -> repo -> application workflow pipeline.
-# Read by: CI (tooling/workflow_*.py), the workflow intake agent
-# (.github/agents/workflow-intake.agent.md), and reviewers.
+# Read by: CI (tooling/workflow_*.py), AI assistants that extract or review boards, and reviewers.
 #
-# Changing this file is a governance change: it needs approval from @your-org/doc-owners
-# (see .github/CODEOWNERS) and a bump of `rules_version`.
+# Changing this file is a governance change: it needs a reviewed pull request (in production,
+# from the documentation owners named in CODEOWNERS) and a bump of `rules_version`.
 #
 # Values marked TBC need a decision before the pipeline goes live.
 

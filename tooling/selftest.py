@@ -2,7 +2,7 @@
 and every rule must fire on a board (or workbook) built to break it.
 
 Usage: python tooling/selftest.py   (exit 0 = pass)
-Boards: examples/library-selftest/*.board.json (see its README).
+Boards: examples/library-selftest/*.board.json and examples/patterns/*.board.json (see their READMEs).
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ import workflow_core as core  # noqa: E402
 import inventory_check  # noqa: E402
 
 BOARDS = sorted((core.REPO / "examples" / "library-selftest").glob("*.board.json"))
+PATTERNS = sorted((core.REPO / "examples" / "patterns").glob("*.board.json"))
 
 
 def expect(name: str, findings, rules: set[str]) -> int:
@@ -44,7 +45,26 @@ def broken_boards(base: dict) -> int:
     for n in range(16):
         b["instances"].append({**copy.deepcopy(act), "id": f"9:{n}", "props": {"Label": f"Do step {n}"}})
     failed += expect("W8 more than 15 activities is flagged", core.build(b).findings, {"W8"})
+    failed += first_session_mistakes(base)
     return failed
+
+
+def first_session_mistakes(base: dict) -> int:
+    """The mistakes seen most on real first-session boards must all be caught in one run:
+    the legend pasted into the process section (a second start event and nested sections),
+    a decision exit without a condition, a solid line to a system, and a system left unlinked."""
+    b = copy.deepcopy(base)
+    start = next(i for i in b["instances"] if i["component"] == "Events/Start event")
+    b["instances"].append({**copy.deepcopy(start), "id": "9:100", "props": {"Show label": True, "Label": "Order received"}})
+    b["other"].append({"id": "9:101", "type": "SECTION", "name": "", "x": 3000, "y": 40, "w": 360, "h": 300})
+    xor_exit = next(c for c in b["connectors"] if c["label"])
+    xor_exit["label"] = ""
+    to_system = next(c for c in b["connectors"] if c["dashed"] and c["from"] in
+                     {i["id"] for i in b["instances"] if i["component"] == "Data and systems/System"})
+    to_system["dashed"] = False
+    system = next(i for i in b["instances"] if i["component"] == "Data and systems/System")
+    b["instances"].append({**copy.deepcopy(system), "id": "9:102", "props": {"Label": "Spreadsheet"}})
+    return expect("first-session mistakes are all caught", core.build(b).findings, {"R2", "R3", "R4", "R5", "W5"})
 
 
 def workbooks() -> int:
@@ -80,7 +100,7 @@ def workbooks() -> int:
 
 def main() -> int:
     failed = 0
-    for path in BOARDS:
+    for path in BOARDS + PATTERNS:
         res = core.build(json.loads(path.read_text(encoding="utf-8")))
         probe = json.loads(json.dumps(res.workflow))
         probe["process"]["version"] = "0.0.1"

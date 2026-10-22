@@ -1,0 +1,249 @@
+{
+ "extractor": "figjam_extract.js@2",
+ "source": {
+  "figma_file_key": "EXAMPLEFILEKEY0000000000",
+  "page_id": "0:1",
+  "section_id": "1:62",
+  "section_name": "QA-003 Activity pattern",
+  "exported_at": "2026-10-20T11:08:03.086Z"
+ },
+ "instances": [
+  {
+   "id": "1:63",
+   "component": "Template/Header block",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "As-is / to-be": "As-is",
+    "Last updated": "2026-10-20",
+    "Process ID": "QA-003",
+    "Owner": "Documentation",
+    "Status": "Draft",
+    "Version": "v0.1",
+    "Process name": "Activity pattern"
+   },
+   "texts": [],
+   "x": 40,
+   "y": 40,
+   "w": 522,
+   "h": 359
+  },
+  {
+   "id": "1:99",
+   "component": "Markers/Swimlane",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Role": "Front desk"
+   },
+   "texts": [
+    "Front desk"
+   ],
+   "x": 40,
+   "y": 440,
+   "w": 1920,
+   "h": 680
+  },
+  {
+   "id": "1:101",
+   "component": "Events/Start event",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Show label": true,
+    "Label": "Guest arrives at front desk"
+   },
+   "texts": [
+    "Guest arrives at front desk"
+   ],
+   "x": 120,
+   "y": 500,
+   "w": 209,
+   "h": 118
+  },
+  {
+   "id": "1:104",
+   "component": "Activities/Activity",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Label": "Verify booking"
+   },
+   "texts": [
+    "Verify booking"
+   ],
+   "x": 520,
+   "y": 520,
+   "w": 200,
+   "h": 100
+  },
+  {
+   "id": "1:106",
+   "component": "Activities/Activity",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Label": "Register guest"
+   },
+   "texts": [
+    "Register guest"
+   ],
+   "x": 1300,
+   "y": 520,
+   "w": 200,
+   "h": 100
+  },
+  {
+   "id": "1:108",
+   "component": "Events/End event",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Show label": true,
+    "Label": "Check-in completed"
+   },
+   "texts": [
+    "Check-in completed"
+   ],
+   "x": 1700,
+   "y": 500,
+   "w": 183,
+   "h": 118
+  },
+  {
+   "id": "1:111",
+   "component": "Data and systems/System",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Label": "PMS"
+   },
+   "texts": [
+    "PMS"
+   ],
+   "x": 300,
+   "y": 800,
+   "w": 200,
+   "h": 100
+  },
+  {
+   "id": "1:113",
+   "component": "Data and systems/Document",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Label": "Arrivals list"
+   },
+   "texts": [
+    "Arrivals list"
+   ],
+   "x": 530,
+   "y": 790,
+   "w": 180,
+   "h": 120
+  },
+  {
+   "id": "1:116",
+   "component": "Data and systems/Annotation",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Note": "Moment: when the guest arrives, before a room is assigned.\nData: booking number, booking holder, stay dates, room type, guarantee / prepayment."
+   },
+   "texts": [],
+   "x": 780,
+   "y": 760,
+   "w": 252,
+   "h": 306
+  },
+  {
+   "id": "1:119",
+   "component": "Data and systems/System",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Label": "PMS"
+   },
+   "texts": [
+    "PMS"
+   ],
+   "x": 1180,
+   "y": 800,
+   "w": 200,
+   "h": 100
+  },
+  {
+   "id": "1:121",
+   "component": "Data and systems/Annotation",
+   "component_key": "",
+   "remote": true,
+   "props": {
+    "Note": "Moment: after the booking is verified.\nData: ID document, nationality, email."
+   },
+   "texts": [],
+   "x": 1420,
+   "y": 780,
+   "w": 252,
+   "h": 190
+  }
+ ],
+ "connectors": [
+  {
+   "id": "1:156",
+   "from": "1:101",
+   "to": "1:104",
+   "label": "",
+   "dashed": false
+  },
+  {
+   "id": "1:160",
+   "from": "1:104",
+   "to": "1:106",
+   "label": "",
+   "dashed": false
+  },
+  {
+   "id": "1:164",
+   "from": "1:106",
+   "to": "1:108",
+   "label": "",
+   "dashed": false
+  },
+  {
+   "id": "1:168",
+   "from": "1:111",
+   "to": "1:104",
+   "label": "",
+   "dashed": true
+  },
+  {
+   "id": "1:172",
+   "from": "1:113",
+   "to": "1:104",
+   "label": "",
+   "dashed": true
+  },
+  {
+   "id": "1:176",
+   "from": "1:116",
+   "to": "1:104",
+   "label": "",
+   "dashed": true
+  },
+  {
+   "id": "1:180",
+   "from": "1:119",
+   "to": "1:106",
+   "label": "",
+   "dashed": true
+  },
+  {
+   "id": "1:184",
+   "from": "1:121",
+   "to": "1:106",
+   "label": "",
+   "dashed": true
+  }
+ ],
+ "other": []
+}

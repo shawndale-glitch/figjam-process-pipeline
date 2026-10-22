@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 700" role="img" aria-labelledby="title desc" font-family="Arial, Helvetica, sans-serif">
+  <title id="title">FigJam process pipeline</title>
+  <desc id="desc">An analyst draws a process in FigJam with a shared component library. An extractor reads one process section into board.json, a file of facts only. The intake checks it against the rule catalogue (R1 to R9 errors, W1 to W8 warnings) and the JSON Schema. A rejected board gets a report with one line per problem and a link to the shape; nothing is written. An accepted board gets a version computed from a semantic diff and is written as workflow.yaml, a documentation page with a Mermaid flowchart, and Gherkin scenarios, through a pull request that a business owner approves. Released versions are tagged, and application repositories check conformance against a pinned version range. A separate check validates the process inventory workbook.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8C959F"/>
+    </marker>
+  </defs>
+  <rect width="960" height="700" fill="#FFFFFF"/>
+
+  <!-- Authoring -->
+  <rect x="40" y="20" width="880" height="80" fill="#F6F8FA" stroke="#D0D7DE"/>
+  <text x="56" y="42" font-size="12" font-weight="bold" fill="#59636E" letter-spacing="1">AUTHORING</text>
+  <g font-size="13" fill="#1F2328" text-anchor="middle">
+    <text x="200" y="74">Component library (ES / EN)</text>
+    <text x="480" y="74">FigJam board, one section per process</text>
+    <text x="760" y="74">Process inventory workbook</text>
+  </g>
+
+  <!-- Extract -->
+  <g stroke="#8C959F" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+    <path d="M480 100 V136"/><path d="M760 100 V136"/>
+  </g>
+  <rect x="300" y="138" width="360" height="58" fill="#FFFFFF" stroke="#D0D7DE"/>
+  <text x="480" y="162" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Extract → board.json</text>
+  <text x="480" y="182" font-size="12" fill="#59636E" text-anchor="middle">facts only: components, props, positions, connectors</text>
+  <rect x="690" y="138" width="230" height="58" fill="#FFFFFF" stroke="#D0D7DE"/>
+  <text x="805" y="162" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Inventory check</text>
+  <text x="805" y="182" font-size="12" fill="#59636E" text-anchor="middle">I1–I8: IDs, dates, status, links</text>
+
+  <!-- Gate -->
+  <g stroke="#8C959F" stroke-width="1.5" fill="none" marker-end="url(#arrow)"><path d="M480 196 V230"/></g>
+  <rect x="200" y="232" width="560" height="96" fill="#FFF8C5" stroke="#D4A72C"/>
+  <text x="480" y="258" font-size="12" font-weight="bold" fill="#7D4E00" text-anchor="middle" letter-spacing="1">VALIDATION GATE</text>
+  <text x="480" y="282" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Lint R1–R9 (errors) · W1–W8 (warnings) · JSON Schema</text>
+  <text x="480" y="306" font-size="12" fill="#59636E" text-anchor="middle">rules read from governance/workflow-rules.yaml, never hard-coded in prose</text>
+
+  <!-- Reject / accept -->
+  <g stroke="#8C959F" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+    <path d="M300 328 V352 H180 V372"/><path d="M660 328 V352 H700 V372"/>
+  </g>
+  <text x="240" y="346" font-size="12" fill="#CF222E" text-anchor="middle">rejected</text>
+  <text x="620" y="346" font-size="12" fill="#1A7F37" text-anchor="middle">accepted</text>
+  <rect x="40" y="374" width="280" height="76" fill="#FFEBE9" stroke="#FF8182"/>
+  <text x="180" y="400" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Report to the author</text>
+  <text x="180" y="420" font-size="12" fill="#59636E" text-anchor="middle">one line per problem + link to the shape</text>
+  <text x="180" y="438" font-size="12" fill="#59636E" text-anchor="middle">nothing written to the repo</text>
+  <rect x="460" y="374" width="460" height="76" fill="#DAFBE1" stroke="#4AC26B"/>
+  <text x="690" y="400" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Semantic diff → version</text>
+  <text x="690" y="420" font-size="12" fill="#59636E" text-anchor="middle">removed step = major · new step = minor · wording = patch</text>
+  <text x="690" y="438" font-size="12" fill="#59636E" text-anchor="middle">header version must match</text>
+
+  <!-- Outputs -->
+  <g stroke="#8C959F" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+    <path d="M690 450 V470 H210 V488"/><path d="M690 450 V470 H540 V488"/><path d="M690 450 V470 H820 V488"/>
+  </g>
+  <rect x="60" y="490" width="300" height="70" fill="#FFFFFF" stroke="#D0D7DE"/>
+  <text x="210" y="516" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">workflow.yaml</text>
+  <text x="210" y="536" font-size="12" fill="#59636E" text-anchor="middle">the process as data, for code and AI</text>
+  <rect x="400" y="490" width="280" height="70" fill="#FFFFFF" stroke="#D0D7DE"/>
+  <text x="540" y="516" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Process page</text>
+  <text x="540" y="536" font-size="12" fill="#59636E" text-anchor="middle">Mermaid flowchart, steps, rules</text>
+  <rect x="720" y="490" width="200" height="70" fill="#FFFFFF" stroke="#D0D7DE"/>
+  <text x="820" y="516" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">scenarios.feature</text>
+  <text x="820" y="536" font-size="12" fill="#59636E" text-anchor="middle">one Gherkin path each</text>
+
+  <!-- Release + conformance -->
+  <g stroke="#8C959F" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+    <path d="M540 560 V592"/>
+  </g>
+  <rect x="40" y="594" width="880" height="86" fill="#F6F8FA" stroke="#D0D7DE"/>
+  <text x="56" y="616" font-size="12" font-weight="bold" fill="#59636E" letter-spacing="1">REVIEW, RELEASE, CONFORMANCE</text>
+  <g font-size="13" fill="#1F2328" text-anchor="middle">
+    <text x="200" y="650">Pull request approved by</text>
+    <text x="200" y="668">a business owner, not the author</text>
+    <text x="480" y="650">Tag &lt;ID&gt;@&lt;semver&gt;, bundle,</text>
+    <text x="480" y="668">notify consumers on a major</text>
+    <text x="760" y="650">Application repos check their build</text>
+    <text x="760" y="668">against a pinned version range</text>
+  </g>
+</svg>
