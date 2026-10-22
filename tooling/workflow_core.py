@@ -72,6 +72,10 @@ CHANGE_MARKERS = {
 # Retired arrow components (hidden from the published library). Using one is an R2 error with a clear fix.
 RETIRED_COMPONENTS = {"Conectores/", "_Conectores/", "Connectors/", "_Connectors/"}
 LABEL_PROPS = ("Etiqueta", "Pregunta", "Nota", "Letra", "Label", "Question", "Note", "Letter")
+# Document link: share URL of the file (SharePoint, OneDrive, Drive), exported as node.url.
+LINK_PROPS = ("Enlace", "Link")
+SHOW_LINK_PROPS = ("Mostrar enlace", "Show link")
+LINK_DEFAULTS = {"", "https://", "http://"}
 LANE_PROPS = ("Rol", "Role")
 # English header fields -> canonical (Spanish) field names
 HEADER_ALIASES = {
@@ -244,6 +248,16 @@ def build(board: dict) -> Result:
         if label is None:  # e.g. pain point: the label lives in a nested step instance
             label = next((x for x in i.get("texts", []) if x.strip() and x.strip() not in ("!", "+")), "")
         n = {"id": i["id"], "type": t, "lane": lane_of(i) if t in FLOW_TYPES else None, "label": clean(label, fixes, i["id"], "label")}
+        if t == "document":
+            url = next((str(i["props"][p]).strip() for p in LINK_PROPS if p in i["props"]), "")
+            shown = next((bool(i["props"][p]) for p in SHOW_LINK_PROPS if p in i["props"]), False)
+            if url not in LINK_DEFAULTS:
+                if re.fullmatch(r"https://\S+", url):
+                    n["url"] = url
+                else:
+                    warn("W9", i["id"], n["label"], f"Document link '{url[:60]}' is not an https:// address; paste the share link (SharePoint, OneDrive, Drive), not a local path")
+            elif shown:
+                warn("W9", i["id"], n["label"], "Document shows a link but the Link / Enlace field is empty; paste the share URL or turn the link off")
         if i["component"] in CHANGE_MARKERS:
             n["change"] = CHANGE_MARKERS[i["component"]]
             markers.append(n)
@@ -427,6 +441,8 @@ def diff(old: dict | None, new: dict) -> tuple[str, list[str]]:
             reasons["major"].append(f"'{a['label']}' moved lane {a.get('lane')} -> {b.get('lane')}")
         if a["label"] != b["label"]:
             reasons["patch"].append(f"Label '{a['label']}' -> '{b['label']}' (confirm the meaning is unchanged)")
+        if a.get("url") != b.get("url"):
+            reasons["patch"].append(f"Link of '{b['label']}' changed")
     of = {(f["from"], f["to"]): f for f in old["flows"]}
     nf = {(f["from"], f["to"]): f for f in new["flows"]}
     for k in of.keys() - nf.keys():

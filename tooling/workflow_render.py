@@ -86,7 +86,7 @@ def page(wf: dict) -> str:
             L.append(f"| {r['label']} | {', '.join(by_id[t]['label'] for t in tgt) or '—'} |")
     data = [n for n in wf["nodes"] if n["type"] in ("system", "document", "datastore")]
     if data:
-        L += ["", "## Systems and data", ""] + [f"- {d['label']} ({d['type']})" for d in data]
+        L += ["", "## Systems and data", ""] + [f"- [{d['label']}]({d['url']}) ({d['type']})" if d.get("url") else f"- {d['label']} ({d['type']})" for d in data]
     if wf.get("notes"):
         L += ["", "## Notes from the board", ""] + [f"- {x['text']} ({x.get('author') or 'unknown'})" for x in wf["notes"]]
     L += ["", "## Conformance", "", "| Consumer | Version | C1 | C2 | C3 | C4 |", "|---|---|---|---|---|---|",

@@ -8,7 +8,7 @@
 #
 # Values marked TBC need a decision before the pipeline goes live.
 
-rules_version: 0.3.0
+rules_version: 0.4.0
 applies_to: workflows/**/workflow.yaml
 schema: schemas/workflow.schema.json
 spec: README.md
@@ -52,6 +52,7 @@ lint:
   W6: { severity: warning, rule: "Pain-point markers only in as-is diagrams; changed/removed-step markers only in to-be diagrams" }
   W7: { severity: warning, rule: "A decision label is a yes/no question ending in '?'" }
   W8: { severity: warning, rule: "At most 15 activities and sub-processes per diagram; collapse the rest into a sub-process section" }
+  W9: { severity: warning, rule: "A document link (Link / Enlace field) is an https:// share URL; a shown link is not left empty" }
   not_checked_by_intake:          # in the standards, reviewed by people
     - "Mind maps are for workshops only; convert them into a rule table (Condition · Approver · Override by · Process ID) before review"
     - "Flow reads left to right; the happy path is a straight line"

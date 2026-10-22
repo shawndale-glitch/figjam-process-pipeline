@@ -84,7 +84,8 @@
           "lane": { "type": ["string", "null"] },
           "label": { "type": "string" },
           "ref": { "type": "string", "description": "subprocess/link target process ID" },
-          "change": { "enum": ["changed", "pain_point", "removed"] }
+          "change": { "enum": ["changed", "pain_point", "removed"] },
+          "url": { "type": "string", "pattern": "^https://\\S+$", "description": "Document share link (Link / Enlace field on the Document shape)" }
         }
       }
     },

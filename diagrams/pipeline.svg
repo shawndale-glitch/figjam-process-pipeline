@@ -32,7 +32,7 @@
   <g stroke="#8C959F" stroke-width="1.5" fill="none" marker-end="url(#arrow)"><path d="M480 196 V230"/></g>
   <rect x="200" y="232" width="560" height="96" fill="#FFF8C5" stroke="#D4A72C"/>
   <text x="480" y="258" font-size="12" font-weight="bold" fill="#7D4E00" text-anchor="middle" letter-spacing="1">VALIDATION GATE</text>
-  <text x="480" y="282" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Lint R1–R9 (errors) · W1–W8 (warnings) · JSON Schema</text>
+  <text x="480" y="282" font-size="14" font-weight="bold" fill="#1F2328" text-anchor="middle">Lint R1–R9 (errors) · W1–W9 (warnings) · JSON Schema</text>
   <text x="480" y="306" font-size="12" fill="#59636E" text-anchor="middle">rules read from governance/workflow-rules.yaml, never hard-coded in prose</text>
 
   <!-- Reject / accept -->

@@ -16,7 +16,7 @@ FigJam section ──figjam_extract.js──▶ board.json ──workflow_intake
 | Script | Status | What it does |
 |---|---|---|
 | `figjam_extract.js` | Working (plugin API) | Reads one process section from a FigJam board and returns `board.json`: facts only (components, properties, positions, connectors). Run through the Figma MCP `use_figma` tool or a plugin. |
-| `workflow_intake.py` | Working | `board.json` → lint (R1–R9, W1–W8; catalogue in `workflow-rules.yaml` → `lint`) → schema → semantic diff and version → writes the resting point. Exit 1 and a report if anything blocks. |
+| `workflow_intake.py` | Working | `board.json` → lint (R1–R9, W1–W9; catalogue in `workflow-rules.yaml` → `lint`) → schema → semantic diff and version → writes the resting point. Exit 1 and a report if anything blocks. |
 | `inventory_check.py` | Working | Checks the process inventory workbook (`.xlsx`) against `workflow-rules.yaml` → `inventory` (I1–I8): required columns, process IDs, ISO dates, statuses, area-column key, FigJam links, and agreement with `workflows/`. Exit 1 on errors. |
 | `workflow_core.py` | Working | Shared rules: component mapping, lane assignment, lint, content hash, version bump. |
 | `figma_rest.py` | Working, not yet run against the live API | Same `board.json` shape from `GET /v1/files/:key/nodes`, so CI runs without the plugin. Used by `workflow_intake.py --url`. |

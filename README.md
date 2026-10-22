@@ -25,6 +25,7 @@ Instead of treating a process diagram as a picture, the pipeline treats it as **
 - Governance for collaborative authoring: drafts, review by a business owner, release tags
 - Conformance checks that let application teams prove their build matches a released process version
 - Validation of the planning spreadsheet the diagrams are scheduled from
+- Source documents linked from the diagram: a Document shape carries its share URL into `workflow.yaml` and the page
 - A self-test that proves every rule fires, run in CI on every push
 - AI in the loop with a human gate: an assistant can extract a board, report and propose fixes, but a release needs a pull request approved by someone other than its author
 
@@ -41,7 +42,7 @@ Instead of treating a process diagram as a picture, the pipeline treats it as **
                       │
                       │  tooling/workflow_intake.py
                       ▼
-        VALIDATION GATE  R1–R9 · W1–W8 · schema   ← rules from governance/workflow-rules.yaml
+        VALIDATION GATE  R1–R9 · W1–W9 · schema   ← rules from governance/workflow-rules.yaml
            │                          │
       rejected                    accepted
            ▼                          ▼
@@ -116,7 +117,7 @@ CI runs the self-test and a strict docs build on every push. See [`.github/workf
 | **R6** every step sits in exactly one role lane | **W6** markers match as-is / to-be |
 | **R7** header date, status and version use allowed values | **W7** a decision label is a question |
 | **R8** no "removed step" marker at review | **W8** at most 15 activities per diagram |
-| **R9** no library placeholder text left behind | |
+| **R9** no library placeholder text left behind | **W9** document links are https:// share URLs |
 
 The planning workbook has its own catalogue (I1–I8). Full wording, rationale and the versioning, rejection and conformance policies are in [`governance/workflow-rules.yaml`](governance/workflow-rules.yaml).
 

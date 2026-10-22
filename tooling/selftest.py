@@ -45,6 +45,15 @@ def broken_boards(base: dict) -> int:
     for n in range(16):
         b["instances"].append({**copy.deepcopy(act), "id": f"9:{n}", "props": {"Label": f"Do step {n}"}})
     failed += expect("W8 more than 15 activities is flagged", core.build(b).findings, {"W8"})
+    b = copy.deepcopy(base); first(b, "Data and systems/Document")["props"].update({"Link": "C:\\Users\\me\\contract.docx", "Show link": True})
+    failed += expect("W9 local-path document link is flagged", core.build(b).findings, {"W9"})
+    b = copy.deepcopy(base); doc = first(b, "Data and systems/Document")
+    doc["props"].update({"Link": "https://example.sharepoint.com/sites/docs/Purchase-order.docx", "Show link": True})
+    res = core.build(b)
+    exported = any(n.get("url", "").endswith("Purchase-order.docx") for n in res.workflow["nodes"])
+    ok = exported and not res.findings
+    print(f"{'PASS' if ok else 'FAIL'}  document link is exported to workflow.yaml  ({'url present' if exported else 'url missing'}, {len(res.findings)} findings)")
+    failed += not ok
     failed += first_session_mistakes(base)
     return failed
 

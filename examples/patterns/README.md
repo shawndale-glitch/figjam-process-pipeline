@@ -10,7 +10,7 @@ Recommended ways to draw common situations so the board stays readable for peopl
 |---|---|---|
 | The **action** | Activity, labelled verb + object: "Verify booking" | Solid connector with arrow, step to step |
 | The **system** where it's done | System: "PMS" | Dashed connector, no arrows |
-| A **list or document** it needs | Document: "Arrivals list" (use Data store if the list is a query inside the system) | Dashed connector, no arrows |
+| A **list or document** it needs | Document: "Arrivals list" (use Data store if the list is a query inside the system); paste its share URL in the **Link** field to carry it into `workflow.yaml` | Dashed connector, no arrows |
 | **Moment and data** | Annotation with two fixed lines: `Moment: …` and `Data: …` | Dashed connector, no arrows |
 
 Rules this pattern relies on:
