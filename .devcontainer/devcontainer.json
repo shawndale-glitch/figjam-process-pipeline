@@ -1,0 +1,20 @@
+{
+  // Opens the repository in GitHub Codespaces with everything the demo needs: Python, the docs
+  // toolchain, Playwright's Chromium and ffmpeg. When it's ready, in the terminal:
+  //   python tooling/demo.py            both acts: every guide passes, then a release breaks one
+  //   python tooling/selftest.py        every rule fires on a deliberately broken example
+  //   mkdocs serve                      the docs site, on the forwarded port 8000
+  "name": "figjam-process-pipeline demo",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "postCreateCommand": "pip install --user -r requirements-media.txt && python -m playwright install --with-deps chromium",
+  "postAttachCommand": "echo 'Ready. Run: python tooling/demo.py   (or: python tooling/demo.py --serve to click through Paydesk afterwards)'",
+  "forwardPorts": [8765, 8000],
+  "portsAttributes": {
+    "8765": { "label": "Paydesk (demo app)", "onAutoForward": "notify" },
+    "8000": { "label": "Docs site (mkdocs serve)", "onAutoForward": "notify" }
+  },
+  "customizations": {
+    "codespaces": { "openFiles": ["procedures/procure-to-pay/P2P-03-P04/procedure.yaml"] },
+    "vscode": { "extensions": ["redhat.vscode-yaml"] }
+  }
+}
