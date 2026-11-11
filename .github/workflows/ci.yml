@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   selftest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,7 +27,7 @@ jobs:
   # Every procedure is run against Paydesk in both languages, without narration. A step whose
   # expected result is not on screen, or data the API says did not change, fails the build.
   procedures:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -50,7 +50,7 @@ jobs:
   # The second act of the demo: the app is started with a renamed button, as after a vendor
   # release. The approval procedure must fail at that step; if it passed, the gate is broken.
   drift:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
