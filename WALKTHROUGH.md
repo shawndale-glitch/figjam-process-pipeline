@@ -62,12 +62,13 @@ python tooling/workflow_intake.py examples/library-selftest/P2P-03-template.boar
 Open [`P2P-03-P03/procedure.yaml`](procedures/procure-to-pay/P2P-03-P03/procedure.yaml), then its [guide](docs/procedures/procure-to-pay/P2P-03-P03.md) and video. One file, tied to a lane and a step on the board, gives the guide, the narrated video in Spanish and English, the screenshots and the QA report.
 
 ```bash
-python tooling/procedure_run.py procedures/procure-to-pay/P2P-03-P04/procedure.yaml --start-demo --headed
+python tooling/demo.py --headed
 ```
 
-- Fixtures come from the app's API and are deleted afterwards; `verify` asks the API whether the data really changed, so a video can't pass on screen alone.
+- Act 1: the browser drives Paydesk through every guide. Fixtures come from the app's API and are deleted afterwards; `verify` asks the API whether the data really changed, so a video can't pass on screen alone.
 - `starts_from`: "Open an invoice" is its own procedure. The others run it first, off camera, and their guides link to it.
-- Then the second act: start Paydesk with `--drift` (the Approve button is renamed, as after a vendor release) and run P2P-03-P04 again. It fails at S1, names the button it couldn't find, and keeps no video. CI's `drift` job asserts exactly that on every push.
+- Act 2: Paydesk restarts with `--drift` (the Approve button is renamed, as after a vendor release) and the approval guide runs again. It fails at S1, names the button it couldn't find, and keeps no video. CI's `drift` job asserts exactly that on every push.
+- If the laptop or network lets you down, the [demo site](https://shawndale-glitch.github.io/figjam-process-pipeline/) has the recorded videos and the [before and after screens](https://shawndale-glitch.github.io/figjam-process-pipeline/drift/), and the [CI runs](https://github.com/shawndale-glitch/figjam-process-pipeline/actions/workflows/ci.yml) show the same two acts on GitHub's machines.
 
 ## 7. The planning spreadsheet (1 min)
 

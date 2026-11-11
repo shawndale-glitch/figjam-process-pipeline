@@ -2,6 +2,10 @@
 
 **Turns process diagrams drawn by business teams in FigJam into validated, versioned, machine-readable workflows that developers, testers and AI agents can build against.**
 
+**[See the live demo site](https://shawndale-glitch.github.io/figjam-process-pipeline/)**: guides with narrated videos, and [how a guide catches a software change](https://shawndale-glitch.github.io/figjam-process-pipeline/drift/). Or run it yourself in the browser, with nothing to install:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/shawndale-glitch/figjam-process-pipeline?quickstart=1)
+
 This project explores one question:
 
 > How do you get a whiteboard drawing, made collaboratively by people who aren't modellers, to become a contract that software can be checked against?
@@ -10,7 +14,7 @@ Instead of treating a process diagram as a picture, the pipeline treats it as **
 
 | If you have… | Read |
 |---|---|
-| 30 seconds | This page, down to [Why this matters](#why-this-matters) |
+| 30 seconds | This page, down to [Why this matters](#why-this-matters), or the [demo site](https://shawndale-glitch.github.io/figjam-process-pipeline/) |
 | 5 minutes | The [rule catalogue](governance/workflow-rules.yaml), one [example board](examples/patterns/README.md) and one [procedure](procedures/procure-to-pay/P2P-03-P03/procedure.yaml) with its [guide](docs/procedures/procure-to-pay/P2P-03-P03.md) |
 | 20 minutes | The [tooling](tooling/README.md), the [self-test](tooling/selftest.py) and the [schema](schemas/workflow.schema.json) |
 | An interview slot | The [walkthrough](WALKTHROUGH.md): a 20-minute live demo of this repository |
@@ -145,11 +149,14 @@ python tooling/selftest.py
 python tooling/workflow_intake.py examples/patterns/QA-003-activity-pattern.board.json --dry-run
 ```
 
+To see the procedures as a two-act demo, every guide passing and then one failing after a simulated vendor release, open a [Codespace](https://codespaces.new/shawndale-glitch/figjam-process-pipeline?quickstart=1) (everything is preinstalled) and run `python tooling/demo.py`. On your own machine, install the media extras first. Add `--headed` to watch the browser, and `--serve` to click through Paydesk by hand afterwards.
+
 To record the procedures (needs the media extras; the narration uses Windows voices or Piper, or `--voice none`):
 
 ```bash
 pip install -r requirements-media.txt
 python -m playwright install chromium
+python tooling/demo.py
 python tooling/procedure_check.py
 python tooling/procedure_run.py procedures/procure-to-pay/P2P-03-P04/procedure.yaml --start-demo
 python tooling/procedure_render.py --all

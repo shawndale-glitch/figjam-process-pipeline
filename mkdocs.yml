@@ -1,10 +1,19 @@
-site_name: Process documentation
+site_name: Documentation that tests itself
+site_description: Process boards to guides, narrated videos and QA runs, from one file per task.
+site_url: https://shawndale-glitch.github.io/figjam-process-pipeline/
+repo_url: https://github.com/shawndale-glitch/figjam-process-pipeline
+repo_name: figjam-process-pipeline
+edit_uri: ""
 docs_dir: docs
 theme:
   name: material
+  features:
+    - navigation.tabs
+    - navigation.top
 markdown_extensions:
   - admonition
   - attr_list
+  - md_in_html
   - tables
   - toc:
       permalink: true
@@ -16,7 +25,9 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 nav:
-  - Home: index.md
+  - Home:
+      - "Overview": index.md
+      - "How a guide catches a change": drift.md
   - Processes:
       - "P2P-03: Invoice approval": processes/procure-to-pay/P2P-03.md
   - Procedures:
