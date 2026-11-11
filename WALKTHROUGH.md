@@ -1,6 +1,6 @@
 # Interview walkthrough
 
-A 15-minute live demonstration that runs entirely from this repository. The production implementation is private because the processes belong to a client, so I don't screen-share it; everything below shows the same pipeline working on fictional processes.
+A 20-minute live demonstration that runs entirely from this repository. The production implementation is private because the processes belong to a client, so I don't screen-share it; everything below shows the same pipeline working on fictional processes.
 
 ## 1. The problem (2 min)
 
@@ -57,11 +57,23 @@ python tooling/workflow_intake.py examples/library-selftest/P2P-03-template.boar
 - `conformance/P2P-03/scenarios.feature`: one Gherkin scenario per path for testers.
 - [`conformance/bindings.template.yaml`](conformance/bindings.template.yaml): how an application team maps each step to an API operation or event, so `workflow_conformance.py` can check their build against a pinned version range.
 
-## 6. The planning spreadsheet (1 min)
+## 6. From process to procedure: guides that test themselves (3 min)
+
+Open [`P2P-03-P03/procedure.yaml`](procedures/procure-to-pay/P2P-03-P03/procedure.yaml), then its [guide](docs/procedures/procure-to-pay/P2P-03-P03.md) and video. One file, tied to a lane and a step on the board, gives the guide, the narrated video in Spanish and English, the screenshots and the QA report.
+
+```bash
+python tooling/procedure_run.py procedures/procure-to-pay/P2P-03-P04/procedure.yaml --start-demo --headed
+```
+
+- Fixtures come from the app's API and are deleted afterwards; `verify` asks the API whether the data really changed, so a video can't pass on screen alone.
+- `starts_from`: "Open an invoice" is its own procedure. The others run it first, off camera, and their guides link to it.
+- Then the second act: start Paydesk with `--drift` (the Approve button is renamed, as after a vendor release) and run P2P-03-P04 again. It fails at S1, names the button it couldn't find, and keeps no video. CI's `drift` job asserts exactly that on every push.
+
+## 7. The planning spreadsheet (1 min)
 
 `tooling/inventory_check.py` validates the workbook the sessions are planned from: IDs, ISO dates, statuses, links to each board, and agreement with what's already in `workflows/`. Planning errors surface before a session, not after.
 
-## 7. AI in the workflow (1 min)
+## 8. AI in the workflow (1 min)
 
 - An assistant with the Figma MCP server extracts boards, runs the gate and proposes fixes; on a real first draft with over a hundred errors it produced a corrected copy that passed, and listed the three changes that altered the process's logic for the team to confirm.
 - It never decides what a process *is*: anything that changes meaning is flagged for a person, and nothing is released without a human approval.

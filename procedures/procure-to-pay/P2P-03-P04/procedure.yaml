@@ -1,0 +1,35 @@
+# Procedure: one task in a system -> guide + narrated video (ES/EN) + QA run.
+# Rules: governance/workflow-rules.yaml -> procedure  Schema: schemas/procedure.schema.json
+# The demo app's --drift option renames Approve, as a vendor release might: this procedure then
+# fails at S1 and its guide is marked as no longer matching the system.
+schema_version: 1.0.0
+procedure:
+  id: P2P-03-P04
+  title: { es: Aprobar una factura, en: Approve an invoice }
+  summary:
+    es: Apruebe una factura revisada para que se pueda programar el pago.
+    en: Approve a checked invoice so its payment can be scheduled.
+  process: P2P-03
+  step_ref: Approve invoice
+  source: Example procedure for the P2P-03 invoice approval board
+  system: demo-app
+  environment: training
+  role: Finance Manager
+  status: draft
+  owner: Example process owner
+  version: 1.0.0
+  starts_from: P2P-03-P01          # open an invoice
+fixtures:
+  invoice: { supplier: Test Supplier Approval, amount: 6400, due: +30d }   # over 5,000: the manager approves
+steps:
+  - id: S1
+    say: { es: "Con la factura abierta, pulse Aprobar.", en: "With the invoice open, select Approve." }
+    do: { action: click, target: { role: button, name: { es: Aprobar, en: Approve } } }
+    expect: { target: { role: dialog, name: { es: Aprobar factura, en: Approve invoice } } }
+  - id: S2
+    say: { es: Compruebe el proveedor y el importe y pulse Confirmar., en: Check the supplier and the amount and select Confirm. }
+    do: { action: click, target: { role: button, name: { es: Confirmar, en: Confirm }, within: { role: dialog, name: { es: Aprobar factura, en: Approve invoice } } } }
+    expect: { target: { text: { es: "Factura {{invoice.number}} aprobada.", en: "Invoice {{invoice.number}} approved." } } }
+verify:
+  - { fixture: invoice, field: status, equals: approved }
+  - { fixture: invoice, field: approved_by, filled: true }

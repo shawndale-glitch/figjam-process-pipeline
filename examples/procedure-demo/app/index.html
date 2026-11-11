@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paydesk</title>
+<style>
+  :root { --bg:#eef2f1; --panel:#fff; --ink:#18242b; --muted:#56656e; --line:#cdd7d6; --brand:#1d5c63; --ok:#1f7a4d; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.5 "Segoe UI", Roboto, Arial, sans-serif; }
+  header { background:var(--brand); color:#fff; display:flex; align-items:center; gap:28px; padding:10px 24px; }
+  header strong { font-size:18px; letter-spacing:.02em; }
+  header a { color:#fff; text-decoration:none; padding:4px 2px; border-bottom:2px solid #fff; }
+  header .env { margin-left:auto; font-size:13px; background:rgba(255,255,255,.18); padding:3px 10px; border-radius:12px; }
+  main { max-width:1100px; margin:22px auto; padding:0 24px; display:grid; gap:18px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:18px 20px; }
+  h1 { font-size:24px; margin:0 0 12px; }
+  h2 { font-size:19px; margin:0 0 12px; }
+  .row { display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+  .field { display:grid; gap:4px; }
+  label { font-size:14px; color:var(--muted); }
+  input, select, textarea { font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:4px; min-width:200px; color:var(--ink); background:#fff; }
+  textarea { min-width:360px; min-height:42px; }
+  button { font:inherit; padding:8px 16px; border-radius:4px; border:1px solid var(--brand); background:var(--brand); color:#fff; cursor:pointer; }
+  button.secondary { background:#fff; color:var(--brand); }
+  table { width:100%; border-collapse:collapse; margin-top:12px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th { font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  td a { color:var(--brand); font-weight:600; }
+  dl { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px 24px; margin:0; }
+  dt { font-size:13px; color:var(--muted); } dd { margin:0; font-weight:600; }
+  [role="status"] { color:var(--ok); font-weight:600; min-height:1.5em; margin:0; }
+  dialog { border:1px solid var(--line); border-radius:6px; padding:20px 22px; min-width:460px; }
+  dialog::backdrop { background:rgba(15,30,35,.35); }
+  .actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+  footer { text-align:center; color:var(--muted); font-size:13px; padding:10px 0 24px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<header>
+  <strong>Paydesk</strong>
+  <nav><a href="#" id="nav-inv" data-t="invoices" aria-current="page"></a></nav>
+  <span class="env" data-t="env"></span>
+</header>
+<main>
+  <section class="panel" aria-labelledby="find-h">
+    <h1 id="find-h" data-t="findTitle"></h1>
+    <form class="row" id="search-form">
+      <div class="field"><label for="num" data-t="number"></label><input id="num" autocomplete="off"></div>
+      <button type="submit" data-t="search"></button>
+    </form>
+    <table id="results" hidden><thead><tr><th data-t="number"></th><th data-t="supplier"></th><th data-t="amount"></th><th data-t="due"></th><th data-t="status"></th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section class="panel" id="detail" aria-labelledby="detail-h" hidden>
+    <h1 id="detail-h" data-t="detailTitle"></h1>
+    <dl>
+      <div><dt data-t="number"></dt><dd id="d-number"></dd></div>
+      <div><dt data-t="supplier"></dt><dd id="d-supplier"></dd></div>
+      <div><dt data-t="amount"></dt><dd id="d-amount"></dd></div>
+      <div><dt data-t="due"></dt><dd id="d-due"></dd></div>
+      <div><dt data-t="status"></dt><dd id="d-status"></dd></div>
+      <div><dt data-t="costCentre"></dt><dd id="d-cc"></dd></div>
+    </dl>
+    <div class="row" style="margin-top:16px">
+      <button type="button" class="secondary" id="open-notes" data-t="notes"></button>
+      <button type="button" class="secondary" id="open-cc" data-t="costCentre"></button>
+      <button type="button" id="open-approve" data-t="approve"></button>
+    </div>
+  </section>
+  <p role="status" id="msg"></p>
+</main>
+
+<dialog id="notes-dlg" aria-labelledby="notes-h">
+  <h2 id="notes-h" data-t="notes"></h2>
+  <form class="row" id="note-form">
+    <div class="field"><label for="ntype" data-t="type"></label><select id="ntype"><option value="internal" data-t="internal"></option><option value="supplier" data-t="forSupplier"></option></select></div>
+    <div class="field"><label for="ntext" data-t="text"></label><textarea id="ntext"></textarea></div>
+    <button type="submit" data-t="saveNote"></button>
+  </form>
+  <table><thead><tr><th data-t="type"></th><th data-t="text"></th><th data-t="user"></th></tr></thead><tbody id="nlist"></tbody></table>
+  <div class="actions"><button type="button" class="secondary" data-close data-t="close"></button></div>
+</dialog>
+
+<dialog id="cc-dlg" aria-labelledby="cc-h">
+  <h2 id="cc-h" data-t="costCentre"></h2>
+  <form class="row" id="cc-form">
+    <div class="field"><label for="ccq" data-t="searchFor"></label><input id="ccq" autocomplete="off"></div>
+    <button type="submit" data-t="search"></button>
+  </form>
+  <table id="cc-results" hidden><thead><tr><th data-t="code"></th><th data-t="name"></th><th></th></tr></thead><tbody></tbody></table>
+  <div class="actions"><button type="button" class="secondary" data-close data-t="close"></button></div>
+</dialog>
+
+<dialog id="approve-dlg" aria-labelledby="approve-h">
+  <h2 id="approve-h" data-t="approveTitle"></h2>
+  <p id="approve-text"></p>
+  <div class="actions">
+    <button type="button" class="secondary" data-close data-t="cancel"></button>
+    <button type="button" id="confirm-approve" data-t="confirm"></button>
+  </div>
+</dialog>
+
+<footer data-t="footer"></footer>
+
+<script>
+const T = {
+  es: { invoices:"Facturas", env:"Formación · datos ficticios", findTitle:"Buscar una factura", number:"Nº de factura", search:"Buscar",
+        supplier:"Proveedor", amount:"Importe", due:"Vencimiento", status:"Estado", detailTitle:"Detalle de la factura",
+        costCentre:"Centro de coste", notes:"Notas", approve:"Aprobar", type:"Tipo", internal:"Interna", forSupplier:"Para el proveedor",
+        text:"Texto", saveNote:"Guardar nota", user:"Usuario", close:"Cerrar", searchFor:"Buscar por", code:"Código", name:"Nombre",
+        select:"Seleccionar", approveTitle:"Aprobar factura", cancel:"Cancelar", confirm:"Confirmar", received:"Recibida", approved:"Aprobada",
+        none:"Sin asignar", noResults:"No hay facturas con ese número.", noteSaved:"Nota guardada.", ccSet:"Centro de coste {c} asignado.",
+        approvedMsg:"Factura {n} aprobada.", approveAsk:"¿Aprobar la factura {n} de {s} por {a}?", footer:"Paydesk · aplicación de formación ficticia" },
+  en: { invoices:"Invoices", env:"Training · fictional data", findTitle:"Find an invoice", number:"Invoice number", search:"Search",
+        supplier:"Supplier", amount:"Amount", due:"Due date", status:"Status", detailTitle:"Invoice details",
+        costCentre:"Cost centre", notes:"Notes", approve:"Approve", type:"Type", internal:"Internal", forSupplier:"For the supplier",
+        text:"Text", saveNote:"Save note", user:"User", close:"Close", searchFor:"Search for", code:"Code", name:"Name",
+        select:"Select", approveTitle:"Approve invoice", cancel:"Cancel", confirm:"Confirm", received:"Received", approved:"Approved",
+        none:"Not assigned", noResults:"No invoices with that number.", noteSaved:"Note saved.", ccSet:"Cost centre {c} assigned.",
+        approvedMsg:"Invoice {n} approved.", approveAsk:"Approve invoice {n} from {s} for {a}?", footer:"Paydesk · fictional training app" },
+};
+const lang = new URLSearchParams(location.search).get("lang") === "es" ? "es" : "en";
+const t = (k, v = {}) => T[lang][k].replace(/\{(\w)\}/g, (_, x) => v[x] ?? "");
+document.documentElement.lang = lang;
+document.querySelectorAll("[data-t]").forEach(el => el.textContent = t(el.dataset.t));
+const $ = id => document.getElementById(id);
+const api = (path, body) => fetch(path, body ? { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify(body) } : {}).then(r => r.json());
+const money = a => new Intl.NumberFormat(lang === "es" ? "es-ES" : "en-GB", { style:"currency", currency:"EUR" }).format(a);
+const say = m => { $("msg").textContent = m; };
+let current = null;
+
+$("search-form").onsubmit = async e => {
+  e.preventDefault(); say("");
+  const rows = await api(`/api/invoices?number=${encodeURIComponent($("num").value.trim())}`);
+  const body = $("results").tBodies[0]; body.innerHTML = "";
+  for (const i of rows) {
+    const tr = body.insertRow();
+    tr.innerHTML = `<td><a href="#">${i.number}</a></td><td>${i.supplier}</td><td>${money(i.amount)}</td><td>${i.due}</td><td>${t(i.status)}</td>`;
+    tr.querySelector("a").onclick = ev => { ev.preventDefault(); show(i.number); };
+  }
+  $("results").hidden = !rows.length;
+  if (!rows.length) say(t("noResults"));
+};
+
+async function show(num) {
+  current = await api(`/api/invoices/${num}`);
+  $("d-number").textContent = current.number; $("d-supplier").textContent = current.supplier;
+  $("d-amount").textContent = money(current.amount); $("d-due").textContent = current.due;
+  $("d-status").textContent = t(current.status); $("d-cc").textContent = current.cost_centre || t("none");
+  $("open-approve").disabled = current.status !== "received";
+  $("detail").hidden = false;
+  const nl = $("nlist"); nl.innerHTML = "";
+  for (const n of current.notes) nl.insertRow().innerHTML = `<td>${t(n.type === "internal" ? "internal" : "forSupplier")}</td><td>${n.text}</td><td>${n.user}</td>`;
+}
+
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
+$("open-notes").onclick = () => $("notes-dlg").showModal();
+$("open-cc").onclick = () => { $("cc-results").hidden = true; $("ccq").value = ""; $("cc-dlg").showModal(); };
+$("open-approve").onclick = () => { $("approve-text").textContent = t("approveAsk", { n:current.number, s:current.supplier, a:money(current.amount) }); $("approve-dlg").showModal(); };
+
+$("note-form").onsubmit = async e => {
+  e.preventDefault();
+  await api(`/api/invoices/${current.number}/notes`, { type:$("ntype").value, text:$("ntext").value });
+  $("ntext").value = ""; await show(current.number); say(t("noteSaved"));
+};
+
+$("cc-form").onsubmit = async e => {
+  e.preventDefault();
+  const rows = await api(`/api/cost-centres?q=${encodeURIComponent($("ccq").value.trim())}`);
+  const body = $("cc-results").tBodies[0]; body.innerHTML = "";
+  for (const c of rows) {
+    const tr = body.insertRow();
+    tr.innerHTML = `<td>${c.code}</td><td>${c.name}</td><td><a href="#">${t("select")}</a></td>`;
+    tr.querySelector("a").onclick = async ev => {
+      ev.preventDefault();
+      await api(`/api/invoices/${current.number}/cost-centre`, { code:c.code });
+      $("cc-dlg").close(); await show(current.number); say(t("ccSet", { c:c.code }));
+    };
+  }
+  $("cc-results").hidden = !rows.length;
+};
+
+$("confirm-approve").onclick = async () => {
+  await api(`/api/invoices/${current.number}/approval`, {});
+  $("approve-dlg").close(); await show(current.number); say(t("approvedMsg", { n:current.number }));
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Recording procedures (tooling/procedure_run.py). Not needed for validation or the site build.
+# After installing: python -m playwright install chromium
+-r requirements.txt
+playwright>=1.50,<2
+imageio-ffmpeg>=0.5,<1

@@ -4,3 +4,7 @@ site/
 *.report.md
 intake-report.md
 inventory-report.md
+
+# procedure runs (tooling/procedure_run.py): recordings, audio, QA reports; sign-in sessions
+build/
+.auth/

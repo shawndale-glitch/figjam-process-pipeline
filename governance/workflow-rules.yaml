@@ -8,7 +8,7 @@
 #
 # Values marked TBC need a decision before the pipeline goes live.
 
-rules_version: 0.4.0
+rules_version: 0.5.0
 applies_to: workflows/**/workflow.yaml
 schema: schemas/workflow.schema.json
 spec: README.md
@@ -85,6 +85,41 @@ inventory:
     I6: { severity: warning, rule: "No column with a header and no values" }
     I7: { severity: error,   rule: "In review or approved processes have a FigJam link to the process section (figma.com/board/... with node-id); drafts get a warning" }
     I8: { severity: warning, rule: "Every process in workflows/ appears in the workbook with the same status" }
+
+# ---------------------------------------------------------------------------
+# 0d. PROCEDURE: system tasks turned into a guide, a narrated video and a QA run
+# ---------------------------------------------------------------------------
+# One procedure.yaml per task done in a system, tied to a task and a lane on a validated
+# process. The guide, the video, the subtitles and the QA verdict all come from it, so they
+# cannot disagree. A video is only produced when every step's expected result was seen on
+# screen and the system's API confirms the data changed; when the screens change, the run
+# fails at the step that no longer matches and the guide says so.
+procedure:
+  path: procedures/<area>/<procedure_id>/procedure.yaml
+  schema: schemas/procedure.schema.json
+  checker: python tooling/procedure_check.py [procedure.yaml ...] [--report FILE]
+  runner: python tooling/procedure_run.py <procedure.yaml> [--lang es en] [--voice sapi|piper|none] [--start-demo]
+  renderer: python tooling/procedure_render.py <procedure.yaml> | --all
+  languages: [es, en]               # one recording per language, with the system's interface in that language; a system may narrow it (systems.<name>.languages)
+  max_steps: 12                     # split longer tasks: a shared opening (e.g. open an invoice) becomes its own procedure, used through starts_from
+  systems:                          # base URL and credentials come from the environment, never from the repository
+    demo-app:
+      description: Paydesk, the fictional accounts-payable app in examples/procedure-demo (stands in for a real system)
+      base_url_env: DEMO_APP_URL
+      base_url_default: http://127.0.0.1:8765
+      api: demo                     # fixtures and verify through the app's JSON API; a real system adds its own adapter (tooling/procedure_run.py ADAPTERS)
+  rules:
+    P1: { severity: error,   rule: "procedure.yaml matches schemas/procedure.schema.json" }
+    P2: { severity: error,   rule: "environment is test or training; nothing in the file points at production" }
+    P3: { severity: error,   rule: "Every title, summary, step text and visible name is given in each of the system's languages (systems.<name>.languages, else languages), with no TODO left" }
+    P4: { severity: error,   rule: "Every step after the first open has an expected result (no check, no QA value)" }
+    P5: { severity: error,   rule: "Controls are found by visible role + name, label, placeholder or text (optionally within a visible container such as a dialog); never CSS, XPath or test ids" }
+    P6: { severity: error,   rule: "The role is a lane on the linked process (when the process is in workflows/)" }
+    P7: { severity: error,   rule: "Typed values are fixture references, codes or short neutral text; no names, e-mail addresses, phone or document numbers; fixture parties are named Test/Prueba/Demo" }
+    P8: { severity: error,   rule: "step_ref names a task on the linked process (when the process is in workflows/); system is a key of procedure.systems" }
+    P9: { severity: error,   rule: "starts_from names an existing procedure on the same system, declares the fixtures it uses, and never loops back" }
+    PW1: { severity: warning, rule: "At most 12 steps per procedure; split longer ones" }
+    PW2: { severity: warning, rule: "The linked process is not in workflows/ yet, so P6 and P8 could not be checked" }
 
 # ---------------------------------------------------------------------------
 # 1. ROUTING: where each artifact goes, who can see it, and who can change it
