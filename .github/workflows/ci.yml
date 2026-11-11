@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   selftest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -27,7 +27,7 @@ jobs:
   # Every procedure is run against Paydesk in both languages, without narration. A step whose
   # expected result is not on screen, or data the API says did not change, fails the build.
   procedures:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,7 +35,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements-media.txt
-      - run: python -m playwright install --with-deps chromium
+      # The runner image already has Chrome's system libraries; --with-deps would also need the Ubuntu
+      # package mirrors (it adds optional fonts), which made the job fail whenever they were unreachable.
+      - run: python -m playwright install chromium
+        timeout-minutes: 5
       - name: Run every procedure
         run: |
           for spec in procedures/*/*/procedure.yaml; do
@@ -50,7 +53,7 @@ jobs:
   # The second act of the demo: the app is started with a renamed button, as after a vendor
   # release. The approval procedure must fail at that step; if it passed, the gate is broken.
   drift:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -58,7 +61,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements-media.txt
-      - run: python -m playwright install --with-deps chromium
+      # The runner image already has Chrome's system libraries; --with-deps would also need the Ubuntu
+      # package mirrors (it adds optional fonts), which made the job fail whenever they were unreachable.
+      - run: python -m playwright install chromium
+        timeout-minutes: 5
       - name: A renamed button must fail the guide
         run: |
           python examples/procedure-demo/app/server.py --port 8765 --drift &
