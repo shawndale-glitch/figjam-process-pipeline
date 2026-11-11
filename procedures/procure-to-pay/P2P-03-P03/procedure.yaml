@@ -1,0 +1,40 @@
+# Procedure: one task in a system -> guide + narrated video (ES/EN) + QA run.
+# Rules: governance/workflow-rules.yaml -> procedure  Schema: schemas/procedure.schema.json
+schema_version: 1.0.0
+procedure:
+  id: P2P-03-P03
+  title: { es: Asignar el centro de coste, en: Assign the cost centre }
+  summary:
+    es: Busque el centro de coste y asígnelo a la factura, para que el gasto se cargue al departamento correcto.
+    en: Search for the cost centre and assign it to the invoice, so the spend is charged to the right department.
+  process: P2P-03
+  step_ref: Register invoice
+  source: Example procedure for the P2P-03 invoice approval board
+  system: demo-app
+  environment: training
+  role: AP Clerk
+  status: draft
+  owner: Example process owner
+  version: 1.0.0
+  starts_from: P2P-03-P01          # open an invoice
+fixtures:
+  invoice: { supplier: Test Supplier Costs, amount: 980, due: +30d }
+steps:
+  - id: S1
+    say: { es: "Con la factura abierta, pulse Centro de coste.", en: "With the invoice open, select Cost centre." }
+    do: { action: click, target: { role: button, name: { es: Centro de coste, en: Cost centre } } }
+    expect: { target: { role: dialog, name: { es: Centro de coste, en: Cost centre } } }
+  - id: S2
+    say: { es: "En Buscar por, escriba el código: CC-300.", en: "In Search for, type the code: CC-300." }
+    do: { action: fill, target: { label: { es: Buscar por, en: Search for } }, value: CC-300 }
+    expect: { target: { label: { es: Buscar por, en: Search for } }, value: CC-300 }
+  - id: S3   # the invoice search behind the window has its own Search button: within picks the window's
+    say: { es: Pulse Buscar en la ventana. Aparece el centro de coste., en: Select Search in the window. The cost centre appears. }
+    do: { action: click, target: { role: button, name: { es: Buscar, en: Search }, within: { role: dialog, name: { es: Centro de coste, en: Cost centre } } } }
+    expect: { target: { role: row, name: { es: CC-300, en: CC-300 }, within: { role: dialog, name: { es: Centro de coste, en: Cost centre } } } }
+  - id: S4
+    say: { es: Pulse Seleccionar. La ventana se cierra y la factura muestra el centro de coste., en: Select Select. The window closes and the invoice shows the cost centre. }
+    do: { action: click, target: { role: link, name: { es: Seleccionar, en: Select }, within: { role: dialog, name: { es: Centro de coste, en: Cost centre } } } }
+    expect: { target: { role: dialog, name: { es: Centro de coste, en: Cost centre } }, visible: false }
+verify:
+  - { fixture: invoice, field: cost_centre, equals: CC-300 }

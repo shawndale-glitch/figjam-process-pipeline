@@ -1,5 +1,5 @@
 """Library self-test: every published component must pass intake with 0 findings,
-and every rule must fire on a board (or workbook) built to break it.
+and every rule must fire on a board, workbook or procedure built to break it.
 
 Usage: python tooling/selftest.py   (exit 0 = pass)
 Boards: examples/library-selftest/*.board.json and examples/patterns/*.board.json (see their READMEs).
@@ -16,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import workflow_core as core  # noqa: E402
 import inventory_check  # noqa: E402
+import procedure_core  # noqa: E402
 
 BOARDS = sorted((core.REPO / "examples" / "library-selftest").glob("*.board.json"))
 PATTERNS = sorted((core.REPO / "examples" / "patterns").glob("*.board.json"))
@@ -87,7 +88,7 @@ def workbooks() -> int:
         wb = Workbook(); ws = wb.active; ws.title = "Inventario"
         ws.append(["Process inventory (self-test)"]); ws.append([]); ws.append(head)
         ws.append(["P2P-01", "Invoice capture", "Core process", "Finance lead", "Borrador", date(2026, 10, 13), link, "X", "X"])
-        ws.append(["P2P-03", "Invoice approval", "Core process", "Finance lead", "Borrador", "2026-10-20", link, None, "X"])
+        ws.append(["P2P-03", "Invoice approval", "Core process", "Finance lead", "En revisión", "2026-10-20", link, None, "X"])   # published in workflows/ as in-review
         ws.append(["Clave: X = el área participa en la sesión"])
         good = Path(tmp) / "good.xlsx"; wb.save(good)
         findings, _ = inventory_check.check(good)
@@ -104,6 +105,49 @@ def workbooks() -> int:
         bad = Path(tmp) / "bad.xlsx"; wb.save(bad)
         findings, _ = inventory_check.check(bad)
         failed += expect("broken inventory is rejected", findings, {"I2", "I3", "I4", "I5", "I6", "I7"})
+    return failed
+
+
+def procedures() -> int:
+    """Every example procedure passes with no errors; each P-rule fires on a copy built to break it."""
+    failed = 0
+    for path in procedure_core.all_specs():
+        errors = [f for f in procedure_core.lint(core.load_yaml(path)) if f.severity == "error"]
+        print(f"{'PASS' if not errors else 'FAIL'}  procedure {path.parent.name} has no errors  ({len(errors)} errors)")
+        for f in errors:
+            print(f"      {f.rule} {f.node}: {f.message}")
+        failed += bool(errors)
+    base = core.load_yaml(core.REPO / "procedures" / "procure-to-pay" / "P2P-03-P01" / "procedure.yaml")
+    lint = procedure_core.lint
+    b = copy.deepcopy(base); b["procedure"]["environment"] = "production"
+    failed += expect("P2 production environment is rejected", lint(b), {"P2"})
+    b = copy.deepcopy(base); b["steps"][1]["say"]["en"] = "TODO"
+    failed += expect("P3 English text left as TODO is rejected", lint(b), {"P3"})
+    b = copy.deepcopy(base); del b["steps"][1]["say"]["es"]
+    failed += expect("P3 missing Spanish text is rejected", lint(b), {"P3"})
+    b = copy.deepcopy(base); del b["steps"][2]["expect"]
+    failed += expect("P4 step without expected result is rejected", lint(b), {"P4"})
+    b = copy.deepcopy(base); b["steps"][2]["do"]["target"] = {"css": "#search-form button"}
+    failed += expect("P5 CSS locator is rejected", lint(b), {"P5"})
+    b = copy.deepcopy(base); b["steps"][1]["do"]["value"] = "ana.garcia@example.com"
+    failed += expect("P7 personal data typed into a field is rejected", lint(b), {"P7"})
+    b = copy.deepcopy(base); b["fixtures"]["invoice"]["supplier"] = "Garcia Logistics SL"
+    failed += expect("P7 fixture party without a test name is rejected", lint(b), {"P7"})
+    b = copy.deepcopy(base); b["procedure"]["system"] = "erp-live"
+    failed += expect("P8 unknown system is rejected", lint(b), {"P8"})
+    b = copy.deepcopy(base); b["procedure"].update(role="Night auditor", step_ref="Print invoices")
+    failed += expect("P6/P8 role and step must exist on the linked process", lint(b), {"P6", "P8"})
+    b = copy.deepcopy(base); b["steps"] += [copy.deepcopy(base["steps"][2]) for _ in range(10)]
+    failed += expect("PW1 more than 12 steps is flagged", lint(b), {"PW1"})
+    b = copy.deepcopy(base); b["procedure"]["process"] = "OPS-099"
+    failed += expect("PW2 a process not yet in workflows/ is flagged", lint(b), {"PW2"})
+    b = copy.deepcopy(base); b["procedure"]["starts_from"] = "P2P-03-P99"
+    failed += expect("P9 starts_from an unknown procedure is rejected", lint(b), {"P9"})
+    b = copy.deepcopy(base); b["procedure"]["starts_from"] = base["procedure"]["id"]
+    failed += expect("P9 starts_from that loops back is rejected", lint(b), {"P9"})
+    other = core.load_yaml(core.REPO / "procedures" / "procure-to-pay" / "P2P-03-P02" / "procedure.yaml")
+    b = copy.deepcopy(other); b["fixtures"] = {"bill": b["fixtures"]["invoice"]}
+    failed += expect("P9 the opening's fixtures must be declared too", lint(b), {"P9"})
     return failed
 
 
@@ -127,6 +171,7 @@ def main() -> int:
     failed += not rejected
     failed += broken_boards(json.loads(BOARDS[0].read_text(encoding="utf-8")))
     failed += workbooks()
+    failed += procedures()
     return 1 if failed else 0
 
 

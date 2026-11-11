@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/shawndale-glitch/figjam-process-pipeline/schemas/procedure.schema.json",
+  "title": "Procedure",
+  "description": "Contract for procedures/<area>/<procedure_id>/procedure.yaml: one task done in a system, written once and turned into a guide, a narrated video per language and a QA run. Rules that need more than structure (P2-P8, PW1-PW2) are enforced by tooling/procedure_core.py. See governance/workflow-rules.yaml -> procedure.",
+  "type": "object",
+  "required": ["schema_version", "procedure", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "procedure": {
+      "type": "object",
+      "required": ["id", "title", "process", "step_ref", "system", "environment", "role", "status", "owner", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Z0-9]{2,4}-[0-9]{2,3}(\\.[0-9]+)?-P[0-9]{2}$", "description": "<process ID>-P<NN>, e.g. P2P-03-P01" },
+        "title": { "$ref": "#/$defs/text" },
+        "process": { "type": "string", "pattern": "^[A-Z0-9]{2,4}-[0-9]{2,3}(\\.[0-9]+)?$" },
+        "step_ref": { "type": "string", "minLength": 1, "description": "Label or node id of the task on the process board that this procedure carries out" },
+        "source": { "type": "string", "description": "Where the content came from (document, sheet, row). Never a local path." },
+        "system": { "type": "string", "description": "A key of procedure.systems in governance/workflow-rules.yaml" },
+        "environment": { "enum": ["test", "training"] },
+        "role": { "type": "string", "minLength": 1, "description": "Lane role on the process board" },
+        "status": { "enum": ["draft", "in-review", "validated", "deprecated"] },
+        "owner": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "summary": { "$ref": "#/$defs/text" },
+        "starts_from": { "type": "string", "pattern": "^[A-Z0-9]{2,4}-[0-9]{2,3}(\\.[0-9]+)?-P[0-9]{2}$", "description": "Id of the procedure whose end screen this one starts on (e.g. open an invoice). The runner does its steps first, off camera; the guide links to it." }
+      }
+    },
+    "fixtures": {
+      "type": "object",
+      "description": "Test data created through the system's API before the run and removed after it. Referenced in steps as {{name.field}}.",
+      "additionalProperties": { "type": "object" }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "say", "do"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^S[0-9]{1,2}$" },
+          "say": { "$ref": "#/$defs/text" },
+          "do": { "$ref": "#/$defs/action" },
+          "expect": { "$ref": "#/$defs/expectation" }
+        }
+      }
+    },
+    "verify": {
+      "type": "array",
+      "description": "Checks made through the system's API after the run: the data really changed.",
+      "items": {
+        "type": "object",
+        "required": ["fixture", "field"],
+        "oneOf": [ { "required": ["equals"] }, { "required": ["filled"] } ],
+        "additionalProperties": false,
+        "properties": {
+          "fixture": { "type": "string" },
+          "field": { "type": "string" },
+          "equals": {},
+          "filled": { "const": true, "description": "The field has any value, for choices the user makes on screen (e.g. which cost centre)." }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "text": {
+      "description": "Text per language; which languages are required depends on the system (P3).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "es": {
+          "type": "string"
+        },
+        "en": {
+          "type": "string"
+        }
+      },
+      "minProperties": 1
+    },
+    "name": {
+      "description": "A visible name: per language, or one fixture value such as {{invoice.number}}.",
+      "oneOf": [ { "$ref": "#/$defs/text" }, { "type": "string", "pattern": "^\\{\\{[a-z_]+\\.[a-z_]+\\}\\}$" } ]
+    },
+    "target": {
+      "description": "How to find a control: by visible role and name, label, placeholder or text. Anything else (CSS, XPath, test ids) is rejected by P5.",
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "role": { "type": "string" },
+        "name": { "$ref": "#/$defs/name" },
+        "label": { "$ref": "#/$defs/name" },
+        "placeholder": { "$ref": "#/$defs/name" },
+        "text": { "$ref": "#/$defs/name" },
+        "within": {
+          "description": "Look only inside this container the user sees, for example the open dialog.",
+          "type": "object",
+          "required": ["role", "name"],
+          "additionalProperties": false,
+          "properties": { "role": { "type": "string" }, "name": { "$ref": "#/$defs/name" } }
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["action"],
+      "additionalProperties": false,
+      "properties": {
+        "action": { "enum": ["open", "click", "fill", "select", "press"] },
+        "path": { "type": "string", "description": "open: path under the system's base URL" },
+        "target": { "$ref": "#/$defs/target" },
+        "value": { "description": "fill/select: a fixture reference, a short code, or short neutral text per language (P7)", "anyOf": [ { "type": "string" }, { "$ref": "#/$defs/text" } ] },
+        "key": { "type": "string" }
+      }
+    },
+    "expectation": {
+      "type": "object",
+      "required": ["target"],
+      "additionalProperties": false,
+      "properties": {
+        "target": { "$ref": "#/$defs/target" },
+        "visible": { "type": "boolean", "default": true },
+        "contains": { "anyOf": [ { "type": "string" }, { "$ref": "#/$defs/text" } ] },
+        "value": { "anyOf": [ { "type": "string" }, { "$ref": "#/$defs/text" } ] }
+      }
+    }
+  }
+}

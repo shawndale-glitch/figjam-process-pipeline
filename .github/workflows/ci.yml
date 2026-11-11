@@ -1,5 +1,6 @@
 # Runs on every push and pull request: the library self-test (every rule must fire on a
-# deliberately broken board or workbook, and the clean boards must pass) and a strict docs build.
+# deliberately broken board, workbook or procedure, and the clean ones must pass), a strict
+# docs build, and the procedures run against the demo app as a QA gate.
 name: CI
 
 on:
@@ -20,4 +21,50 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - run: python tooling/selftest.py
+      - run: python tooling/procedure_check.py
       - run: mkdocs build --strict
+
+  # Every procedure is run against Paydesk in both languages, without narration. A step whose
+  # expected result is not on screen, or data the API says did not change, fails the build.
+  procedures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-media.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Run every procedure
+        run: |
+          for spec in procedures/*/*/procedure.yaml; do
+            python tooling/procedure_run.py "$spec" --voice none --start-demo
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedure-qa
+          path: build/procedures/**/qa-report.md
+
+  # The second act of the demo: the app is started with a renamed button, as after a vendor
+  # release. The approval procedure must fail at that step; if it passed, the gate is broken.
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-media.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: A renamed button must fail the guide
+        run: |
+          python examples/procedure-demo/app/server.py --port 8765 --drift &
+          sleep 2
+          if python tooling/procedure_run.py procedures/procure-to-pay/P2P-03-P04/procedure.yaml --lang en --voice none; then
+            echo "::error::P2P-03-P04 passed against a drifted app; the QA gate did not catch the change"; exit 1
+          fi
+          grep -q "could not find button" build/procedures/P2P-03-P04/en/qa-report.md
+          echo "Drift caught at the expected step:"; cat build/procedures/P2P-03-P04/en/qa-report.md

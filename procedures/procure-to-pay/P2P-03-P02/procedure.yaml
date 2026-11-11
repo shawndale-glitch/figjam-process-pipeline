@@ -1,0 +1,42 @@
+# Procedure: one task in a system -> guide + narrated video (ES/EN) + QA run.
+# Rules: governance/workflow-rules.yaml -> procedure  Schema: schemas/procedure.schema.json
+schema_version: 1.0.0
+procedure:
+  id: P2P-03-P02
+  title: { es: Añadir una nota interna a una factura, en: Add an internal note to an invoice }
+  summary:
+    es: Deje una nota que solo verá el equipo de cuentas a pagar, por ejemplo qué se ha comprobado del pedido.
+    en: Leave a note only the accounts payable team will see, for example what was checked against the purchase order.
+  process: P2P-03
+  step_ref: Match to purchase order
+  source: Example procedure for the P2P-03 invoice approval board
+  system: demo-app
+  environment: training
+  role: AP Clerk
+  status: draft
+  owner: Example process owner
+  version: 1.0.0
+  starts_from: P2P-03-P01          # open an invoice
+fixtures:
+  invoice: { supplier: Test Supplier Notes, amount: 1250, due: +30d }
+steps:
+  - id: S1
+    say: { es: "Con la factura abierta, pulse Notas.", en: "With the invoice open, select Notes." }
+    do: { action: click, target: { role: button, name: { es: Notas, en: Notes } } }
+    expect: { target: { role: dialog, name: { es: Notas, en: Notes } } }
+  - id: S2
+    say: { es: "En Tipo, elija Interna. Solo la verá el equipo.", en: "Under Type, choose Internal. Only the team will see it." }
+    do: { action: select, target: { label: { es: Tipo, en: Type } }, value: internal }
+    expect: { target: { label: { es: Tipo, en: Type } }, value: internal }
+  - id: S3
+    say: { es: Escriba la nota en Texto., en: Write the note under Text. }
+    do: { action: fill, target: { label: { es: Texto, en: Text } }, value: { es: Pedido revisado con almacén, en: PO checked with the warehouse } }
+    expect: { target: { label: { es: Texto, en: Text } }, value: { es: Pedido revisado con almacén, en: PO checked with the warehouse } }
+  - id: S4
+    say: { es: Pulse Guardar nota. La nota queda en la lista con su usuario., en: Select Save note. The note is listed with your user. }
+    do: { action: click, target: { role: button, name: { es: Guardar nota, en: Save note } } }
+    expect: { target: { role: row, name: { es: Pedido revisado con almacén, en: PO checked with the warehouse }, within: { role: dialog, name: { es: Notas, en: Notes } } }, contains: demo.clerk }
+verify:
+  - { fixture: invoice, field: notes_count, equals: 1 }
+  - { fixture: invoice, field: last_note_type, equals: internal }
+  - { fixture: invoice, field: last_note_text, filled: true }   # the text is in the language of the run

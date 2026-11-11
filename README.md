@@ -11,9 +11,9 @@ Instead of treating a process diagram as a picture, the pipeline treats it as **
 | If you have… | Read |
 |---|---|
 | 30 seconds | This page, down to [Why this matters](#why-this-matters) |
-| 5 minutes | The [rule catalogue](governance/workflow-rules.yaml) and one [example board](examples/patterns/README.md) |
+| 5 minutes | The [rule catalogue](governance/workflow-rules.yaml), one [example board](examples/patterns/README.md) and one [procedure](procedures/procure-to-pay/P2P-03-P03/procedure.yaml) with its [guide](docs/procedures/procure-to-pay/P2P-03-P03.md) |
 | 20 minutes | The [tooling](tooling/README.md), the [self-test](tooling/selftest.py) and the [schema](schemas/workflow.schema.json) |
-| An interview slot | The [walkthrough](WALKTHROUGH.md): a 15-minute live demo of this repository |
+| An interview slot | The [walkthrough](WALKTHROUGH.md): a 20-minute live demo of this repository |
 
 ## What this demonstrates
 
@@ -27,6 +27,8 @@ Instead of treating a process diagram as a picture, the pipeline treats it as **
 - Validation of the planning spreadsheet the diagrams are scheduled from
 - Source documents linked from the diagram: a Document shape carries its share URL into `workflow.yaml` and the page
 - A self-test that proves every rule fires, run in CI on every push
+- Procedures as code: each task on a process becomes a guide and a narrated video in Spanish and English, recorded by Playwright from one YAML file
+- Guides that test themselves: the recording is a QA run, so a screen change fails CI at the step that no longer matches
 - AI in the loop with a human gate: an assistant can extract a board, report and propose fixes, but a release needs a pull request approved by someone other than its author
 
 ## Architecture
@@ -89,6 +91,48 @@ Real first-session boards fail in predictable ways: the legend gets pasted into 
 
 Every line names the rule, quotes the label the author typed, and links to the shape. Fixed, the same board passes with 0 findings and is published as data. For the pattern teams use to say *which system, which document, when, and with what data* for each step, see [`examples/patterns/`](examples/patterns/README.md).
 
+## From process to procedure
+
+A process says *who does what*. A procedure says *how, on screen*: one `procedure.yaml` per task in a system, tied to a lane and a step on the process board. From that one file the pipeline produces the guide page, a narrated video in each language with subtitles, step screenshots and a QA report, and they can't disagree because they come from the same run.
+
+![A procedure being recorded: the caption reads "Select Search in the window. The cost centre appears." and the matching row is highlighted in the Cost centre window of the fictional Paydesk app](diagrams/procedure-demo.gif)
+
+```yaml
+# procedures/procure-to-pay/P2P-03-P03/procedure.yaml (excerpt)
+procedure:
+  id: P2P-03-P03
+  title: { es: Asignar el centro de coste, en: Assign the cost centre }
+  process: P2P-03                  # the board it belongs to...
+  step_ref: Register invoice       # ...the step it carries out...
+  role: AP Clerk                   # ...and the lane that does it (rules P6, P8)
+  starts_from: P2P-03-P01          # open an invoice: a shared procedure, run first and cut from the video
+fixtures:
+  invoice: { supplier: Test Supplier Costs, amount: 980, due: +30d }   # created through the API, deleted after
+steps:
+  - id: S3
+    say: { es: Pulse Buscar en la ventana. Aparece el centro de coste., en: Select Search in the window. The cost centre appears. }
+    do: { action: click, target: { role: button, name: { es: Buscar, en: Search }, within: { role: dialog, name: { es: Centro de coste, en: Cost centre } } } }
+    expect: { target: { role: row, name: { es: CC-300, en: CC-300 }, within: { role: dialog, name: { es: Centro de coste, en: Cost centre } } } }
+verify:
+  - { fixture: invoice, field: cost_centre, equals: CC-300 }   # the API confirms the data changed
+```
+
+How a run works, per language:
+
+1. **Fixtures** (fictional records) are created through the system's API, so every run starts from known data.
+2. Each step's `say` text becomes **speech**, and the narration sets the pace.
+3. **Playwright** opens the screens in that language, captions the step, highlights the control, acts, and checks the expected result. Controls are found the way a user sees them (role and name, label, text), never by CSS or test ids (rule P5).
+4. The **API confirms** the data really changed (`verify`), and the fixtures are deleted.
+5. **ffmpeg** joins recording and narration into a 1080p MP4 with a subtitle track. A video is kept only if every step and every check passed.
+
+**Guides that test themselves.** CI runs every procedure against the demo app on each push. A second job starts the app with `--drift`, which renames the Approve button as a vendor release might, and asserts that the approval guide fails at exactly that step:
+
+```text
+FAIL  P2P-03-P04 EN  1/2 steps  FAILED at S1: could not find button name "Approve" on screen within 8 s
+```
+
+The demo app, **Paydesk**, is a small fictional accounts-payable app in Spanish and English ([`examples/procedure-demo/`](examples/procedure-demo/)). A real system plugs in with a five-method adapter (`create`, `get`, `delete`, `url`, `version`) in `tooling/procedure_run.py`; its credentials and sign-in session stay outside the repository. The guides are in [`docs/procedures/`](docs/procedures/index.md).
+
 ## Try it
 
 The examples are small, fictional and valid. The self-test runs them, then breaks copies on purpose to prove each rule fires.
@@ -101,9 +145,19 @@ python tooling/selftest.py
 python tooling/workflow_intake.py examples/patterns/QA-003-activity-pattern.board.json --dry-run
 ```
 
+To record the procedures (needs the media extras; the narration uses Windows voices or Piper, or `--voice none`):
+
+```bash
+pip install -r requirements-media.txt
+python -m playwright install chromium
+python tooling/procedure_check.py
+python tooling/procedure_run.py procedures/procure-to-pay/P2P-03-P04/procedure.yaml --start-demo
+python tooling/procedure_render.py --all
+```
+
 To read a real board, run `tooling/figjam_extract.js` through the Figma plugin API (for example the Figma MCP `use_figma` tool) with `FILE_KEY`, `PAGE_ID` and `SECTION_ID` filled in, and save the result as `board.json`. In CI, `workflow_intake.py --url "<FigJam section link>"` reads it through the REST API with a `FIGMA_TOKEN`. To check a planning workbook: `python tooling/inventory_check.py path/to/inventory.xlsx`.
 
-CI runs the self-test and a strict docs build on every push. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+CI runs the self-test, a strict docs build, every procedure against the demo app, and the drift check on every push. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## The rules at a glance
 
@@ -119,7 +173,7 @@ CI runs the self-test and a strict docs build on every push. See [`.github/workf
 | **R8** no "removed step" marker at review | **W8** at most 15 activities per diagram |
 | **R9** no library placeholder text left behind | **W9** document links are https:// share URLs |
 
-The planning workbook has its own catalogue (I1–I8). Full wording, rationale and the versioning, rejection and conformance policies are in [`governance/workflow-rules.yaml`](governance/workflow-rules.yaml).
+Procedures have their own (P1–P9, PW1–PW2): test or training environments only, every text in each language, an expected result for every step, user-visible locators only, role and step on the linked process in `workflows/`, no personal data typed in, fixtures named Test/Prueba/Demo, a valid `starts_from`, at most 12 steps. The planning workbook has its own catalogue (I1–I8). Full wording, rationale and the versioning, rejection and conformance policies are in [`governance/workflow-rules.yaml`](governance/workflow-rules.yaml).
 
 ## Repository map
 
@@ -128,13 +182,14 @@ The planning workbook has its own catalogue (I1–I8). Full wording, rationale a
 ├── README.md                 # you are here
 ├── WALKTHROUGH.md            # what I demonstrate live in an interview
 ├── governance/               # workflow-rules.yaml (the rules), areas.yaml (allowed ID prefixes)
-├── schemas/                  # workflow.schema.json: the contract for workflow.yaml
-├── tooling/                  # extractor, intake, render, release, conformance, inventory check, self-test
-├── examples/                 # library-selftest/ (every component) and patterns/ (recommended authoring)
-├── diagrams/                 # pipeline diagram (SVG)
+├── schemas/                  # workflow.schema.json and procedure.schema.json: the contracts
+├── tooling/                  # extractor, intake, render, release, conformance, inventory check, procedures, self-test
+├── examples/                 # library-selftest/, patterns/, and procedure-demo/ (Paydesk, the fictional app)
+├── procedures/               # one procedure.yaml per task, by area
+├── diagrams/                 # pipeline diagram (SVG), procedure recording (GIF)
 ├── conformance/              # bindings template for application teams
-├── workflows/                # consumers.yaml: which apps implement which process versions
-├── docs/                     # where generated process pages land (MkDocs)
+├── workflows/                # published workflows (P2P-03, in review) and consumers.yaml
+├── docs/                     # generated process pages and procedure guides with videos (MkDocs)
 └── .github/workflows/        # CI self-test, and the intake, release and conformance workflows
 ```
 
@@ -145,6 +200,7 @@ The planning workbook has its own catalogue (I1–I8). Full wording, rationale a
 - Python for linting, versioning, rendering, release and conformance
 - YAML for rules and workflows, JSON Schema for the workflow contract
 - Mermaid for diffable flowcharts, Gherkin for executable scenarios
+- Playwright for recording procedures, local text-to-speech (Windows SAPI or Piper) and ffmpeg for narrated videos with subtitles
 - MkDocs Material with strict builds
 - GitHub Actions for CI, intake pull requests, release tagging and reusable conformance checks
 - Claude with the Figma MCP server for extraction, review and AI-assisted board fixes, with a person approving every release
@@ -155,8 +211,9 @@ This is a working proof of concept, used on real process-redesign sessions.
 
 - The plugin-API extractor, intake, inventory check and self-test have been run against real boards.
 - `figma_rest.py` (the REST reader used by CI intake) hasn't yet been run against the live Figma API.
+- The procedure engine has recorded and verified guides against a real enterprise application's test environment through its own adapter; here it records the fictional Paydesk app instead.
 
-The **production implementation** runs in a private repository because the processes are a client's. Everything here is a sanitized, clean-room presentation: the examples are a **fictional invoice-approval process** and a **generic front-desk check-in**, component keys and file keys are placeholders, and no client material is included.
+The **production implementation** runs in a private repository because the processes are a client's. Everything here is a sanitized, clean-room presentation: the examples are a **fictional invoice-approval process**, a **generic front-desk check-in** and **Paydesk**, a fictional accounts-payable app, component keys and file keys are placeholders, and no client material is included.
 
 ## About
 

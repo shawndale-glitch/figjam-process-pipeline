@@ -1,0 +1,40 @@
+# Procedure: one task in a system -> guide + narrated video (ES/EN) + QA run.
+# Rules: governance/workflow-rules.yaml -> procedure  Schema: schemas/procedure.schema.json
+# A shared opening: the other P2P-03 procedures start from it (starts_from), so they don't repeat it.
+schema_version: 1.0.0
+procedure:
+  id: P2P-03-P01
+  title: { es: Abrir una factura, en: Open an invoice }
+  summary:
+    es: Busque una factura por su número y ábrala para revisarla, añadir notas o aprobarla.
+    en: Find an invoice by its number and open it to review it, add notes or approve it.
+  process: P2P-03
+  step_ref: Match to purchase order
+  source: Example procedure for the P2P-03 invoice approval board
+  system: demo-app
+  environment: training
+  role: AP Clerk
+  status: draft
+  owner: Example process owner
+  version: 1.0.0
+fixtures:
+  invoice: { supplier: Test Supplier Open, amount: 1250, due: +30d }
+steps:
+  - id: S1
+    say: { es: Abra Paydesk en la pantalla de facturas., en: Open Paydesk on the invoices screen. }
+    do: { action: open, path: / }
+    expect: { target: { role: heading, name: { es: Buscar una factura, en: Find an invoice } } }
+  - id: S2
+    say: { es: Escriba el número de la factura., en: Type the invoice number. }
+    do: { action: fill, target: { label: { es: Nº de factura, en: Invoice number } }, value: "{{invoice.number}}" }
+    expect: { target: { label: { es: Nº de factura, en: Invoice number } }, value: "{{invoice.number}}" }
+  - id: S3
+    say: { es: Pulse Buscar. La factura aparece en la lista., en: Select Search. The invoice appears in the list. }
+    do: { action: click, target: { role: button, name: { es: Buscar, en: Search } } }
+    expect: { target: { role: link, name: "{{invoice.number}}" } }
+  - id: S4
+    say: { es: Pulse el número de la factura para abrirla., en: Select the invoice number to open it. }
+    do: { action: click, target: { role: link, name: "{{invoice.number}}" } }
+    expect: { target: { role: heading, name: { es: Detalle de la factura, en: Invoice details } } }
+verify:
+  - { fixture: invoice, field: status, equals: received }   # opening an invoice changes nothing
