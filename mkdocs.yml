@@ -1,5 +1,5 @@
 site_name: Documentation that tests itself
-site_description: Process boards to guides, narrated videos and QA runs, from one file per task.
+site_description: One spec file per task generates the written guide, a narrated video with subtitles and an automated test. When the software changes, the guide fails CI before anyone follows it.
 site_url: https://shawndale-glitch.github.io/figjam-process-pipeline/
 repo_url: https://github.com/shawndale-glitch/figjam-process-pipeline
 repo_name: figjam-process-pipeline
@@ -7,6 +7,7 @@ edit_uri: ""
 docs_dir: docs
 theme:
   name: material
+  custom_dir: overrides
   features:
     - navigation.tabs
     - navigation.top
